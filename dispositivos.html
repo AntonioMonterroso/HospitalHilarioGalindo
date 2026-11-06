@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Varios dispositivos · Hospital Hilario Galindo</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231d4438'/%3E%3Cpath d='M13 7h6v6h6v6h-6v6h-6v-6H7v-6h6z' fill='%23f6f1e6'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,400;6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/app.css">
+<style>
+  .pagina-d { padding: var(--s5) var(--s6) var(--s7); max-width: 1680px; margin: 0 auto; }
+  .tablero { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s4); align-items: center; padding: var(--s3) 0; border-top: 1px solid var(--tinta-3); border-bottom: 1px solid var(--linea-f); margin-bottom: var(--s5); }
+  .tablero .cifra { flex: 0 1 150px; padding: 0 var(--s4) 0 0; border: 0; }
+  .tablero .cifra + .cifra { padding-left: 0; border: 0; }
+  .tablero .acciones { margin-left: auto; }
+  .aparato select { width: auto; min-height: 32px; padding: 2px 6px; font-size: var(--t-s); }
+  @media (max-width: 720px) { .pagina-d { padding: var(--s4); } .tablero .acciones { margin-left: 0; width: 100%; } }
+</style>
+</head>
+<body>
+<div class="banda"><span>Demostración · datos de ejemplo</span><span class="acciones"><a href="index.html">Volver al sistema</a><a href="propuesta.html">Propuesta y precios</a></span></div>
+<main class="pagina-d">
+  <div class="cabeza"><div class="txt"><h1>Tres áreas, un solo inventario</h1><p>Cada pantalla es una sesión distinta con su propio rol. Pida algo desde Enfermería y véalo llegar a Farmacia. Después simule la hora pico.</p></div></div>
+  <div class="tablero">
+    <div class="cifra"><span>Operaciones</span><b id="c-op">0</b></div>
+    <div class="cifra"><span>Pacientes simulados</span><b id="c-pa">0</b></div>
+    <div class="cifra"><span>Rechazadas</span><b id="c-re">0</b></div>
+    <div class="acciones">
+      <label class="peq" for="vel">Ritmo</label>
+      <select id="vel" style="width:auto"><option value="1500">Día normal</option><option value="600" selected>Hora pico</option><option value="150">Prueba de estrés</option></select>
+      <button class="btn" id="choque">Dos cajas, una unidad</button>
+      <button class="btn pri" id="sim">Simular movimiento</button>
+    </div>
+  </div>
+  <div class="nota oculto" id="res"></div>
+  <div class="salon" id="salon"></div>
+  <p class="peq mudo" style="margin-top:24px">En este demo las pantallas se sincronizan dentro del mismo navegador. Con Supabase hacen lo mismo entre computadoras, tablets y teléfonos reales.</p>
+</main>
+<script src="js/iconos.js"></script>
+<script src="js/datos.js"></script>
+<script src="js/motor.js"></script>
+<script src="js/ui.js"></script>
+<script>
+(async function () {
+  const { Motor: M, Catalogo: C, U } = window;
+  const APARATOS = [
+    { id: 'pc', t: 'Computadora', u: 'u5', w: 1280, h: 800 },
+    { id: 'tb', t: 'Tablet', u: 'u6', w: 820, h: 1040 },
+    { id: 'tel', t: 'Teléfono', u: 'u8', w: 390, h: 800 },
+  ];
+  const salon = document.getElementById('salon');
+  salon.innerHTML = APARATOS.map(a => `<section class="aparato" data-w="${a.w}" data-h="${a.h}"><div class="cab"><b>${a.t}</b><select aria-label="Usuario en ${a.t}" data-ap="${a.id}">${C.USUARIOS.map(u => `<option value="${u.id}" ${u.id === a.u ? 'selected' : ''}>${U.esc(C.ROLES[u.rol].nombre)}</option>`).join('')}</select></div><div class="marco"><div class="pantalla"><iframe id="f-${a.id}" title="${a.t}" src="index.html?marco=1&u=${a.u}" width="${a.w}" height="${a.h}"></iframe></div></div></section>`).join('');
+  function ajustar() {
+    document.querySelectorAll('.aparato').forEach(s => {
+      const w = +s.dataset.w, h = +s.dataset.h, p = s.querySelector('.pantalla'), f = s.querySelector('iframe');
+      const k = p.clientWidth / w; f.style.transform = `scale(${k})`; p.style.height = h * k + 'px';
+    });
+  }
+  new ResizeObserver(ajustar).observe(salon); ajustar();
+  salon.addEventListener('change', ev => { const a = ev.target.dataset.ap; if (a) document.getElementById('f-' + a).src = `index.html?marco=1&u=${ev.target.value}`; });
+
+  await M.iniciar();
+  const db = M.db; let ops = 0, pac = 0, rech = 0;
+  const pinta = () => { document.getElementById('c-op').textContent = U.n(ops); document.getElementById('c-pa').textContent = U.n(pac); document.getElementById('c-re').textContent = U.n(rech); };
+  M.alCambiar(h => { ops += h.length; rech += h.filter(x => !x.r.ok).length; pinta(); });
+
+  const de = a => a[Math.floor(Math.random() * a.length)];
+  const meds = db.productos.filter(p => p.cat === 'Medicamento' && !p.controlado).slice(0, 60);
+  const usuarios = ['u3', 'u4'].map(id => db.ix.usr.get(id));
+  const turnoDe = u => db.turnos.find(t => t.us === u.id && t.estado === 'abierto');
+  function paciente() {
+    const u = de(usuarios), t = turnoDe(u); const tipo = de(['consulta', 'consulta', 'farmacia', 'laboratorio', 'emergencia']);
+    const items = [];
+    if (tipo !== 'farmacia') items.push({ serv: de(db.servicios.filter(s => s.precio < 300)).id, cant: 1 });
+    for (let i = 0, n = 1 + Math.floor(Math.random() * 3); i < n; i++) items.push({ prod: de(meds).id, bod: 'FX', cant: 1 + Math.floor(Math.random() * 4) });
+    pac++;
+    M.enviar('sim.paciente', { pac: { nombre: `${de(C.NOMBRES)} ${de(C.APELLIDOS)} ${de(C.APELLIDOS)}`, nit: 'CF', muni: de(C.MUNICIPIOS) }, tipo, items, turno: t && t.id, forma: de(['Efectivo', 'Efectivo', 'Tarjeta']) }, u);
+  }
+  let reloj = null; const boton = document.getElementById('sim');
+  function arrancar() { clearInterval(reloj); reloj = setInterval(paciente, +document.getElementById('vel').value); boton.textContent = 'Detener'; }
+  boton.onclick = () => { if (reloj) { clearInterval(reloj); reloj = null; boton.textContent = 'Simular movimiento'; } else arrancar(); };
+  document.getElementById('vel').onchange = () => { if (reloj) arrancar(); };
+
+  document.getElementById('choque').onclick = async () => {
+    const hoy = M.finDia(Date.now());
+    const abiertas = db.cuentas.filter(c => c.estado === 'abierta');
+    const p = db.productos.find(x => !x.controlado && M.disponible(db, x.id, 'EM', Date.now()) > 0);
+    const n = M.disponible(db, p.id, 'EM', Date.now());
+    const [a, b] = [abiertas[0], abiertas[1]];
+    const [r1, r2] = await Promise.all([
+      M.enviar('cuenta.cargo', { cuenta: a.id, items: [{ prod: p.id, bod: 'EM', cant: n }] }, usuarios[0]),
+      M.enviar('cuenta.cargo', { cuenta: b.id, items: [{ prod: p.id, bod: 'EM', cant: 1 }] }, usuarios[1]),
+    ]);
+    const res = document.getElementById('res'); res.classList.remove('oculto');
+    const ganador = r1.ok ? 'Caja 1' : 'Caja 2', perdedor = r1.ok ? r2 : r1;
+    res.innerHTML = U.ic('info') + `<span>${U.esc(p.nombre)}: ${ganador} se llevó las ${U.n(n)} unidades de Emergencia. La otra caja recibió este aviso: «${U.esc(perdedor.error || 'sin aviso')}» Nadie vendió lo que ya no había.</span>`;
+  };
+})();
+</script>
+</body>
+</html>
