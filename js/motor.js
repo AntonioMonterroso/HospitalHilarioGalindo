@@ -23,7 +23,7 @@
   function baseVacia(ancla) {
     const db = {
       ancla, ahoraSemilla: ancla,
-      cfg: { nombre: C.HOSPITAL.nombre, nit: C.HOSPITAL.nit, direccion: 'Finca San Cayetano, ' + C.HOSPITAL.lugar, ivaPct: 12, limiteAprobacion: 25000, diasVence: 90, limiteCF: 2500, metodo: 'Promedio ponderado', serie: 'HHG-A', serieDon: 'HHG-D', retISR: true, retIVA: false, serviciosExentos: false },
+      cfg: { nombre: C.HOSPITAL.nombre, nit: C.HOSPITAL.nit, direccion: 'Finca San Cayetano, ' + C.HOSPITAL.lugar, ivaPct: 12, limiteAprobacion: 25000, diasVence: 90, limiteCF: 2500, metodo: 'Promedio ponderado', serie: 'HHG-A', serieInt: 'HHG-C', serieDon: 'HHG-D', doc: 'interno', retISR: true, retIVA: false, serviciosExentos: false },
       usuarios: C.USUARIOS.map(u => ({ ...u, activo: true })),
       bodegas: C.BODEGAS,
       productos: C.crearProductos(), proveedores: C.PROVEEDORES.map(p => ({ ...p })), servicios: C.SERVICIOS,
@@ -76,7 +76,7 @@
   }
   function disponible(db, prod, bod, ts) {
     const hoy = M.finDia(ts); let n = 0;
-    for (const l of db.ix.lotesDe.get(prod) || []) if (l.vence >= hoy) n += l.ex[bod] || 0;
+    for (const l of db.ix.lotesDe.get(prod) || []) if (l.vence >= hoy && !l.bloqueo) n += l.ex[bod] || 0;
     return n;
   }
   M.disponible = disponible;
@@ -84,7 +84,7 @@
     const hoy = M.finDia(o.ts); let falta = o.cant; const partes = []; let costo = 0;
     for (const l of db.ix.lotesDe.get(o.prod) || []) {
       if (falta <= 0) break;
-      if (l.vence < hoy) continue;
+      if (l.vence < hoy || l.bloqueo) continue;
       const hay = l.ex[o.bod] || 0; if (hay <= 0) continue;
       const c = Math.min(hay, falta);
       const cu = salirLote(db, { ...o, lote: l.id, cant: c });
@@ -159,7 +159,8 @@
     const factor = c.total > 0 ? neto / c.total : 0;
     const exento = r2(exentoBruto * factor), gravado = r2(neto - exento);
     const iva = r2(gravado - gravado / (1 + db.cfg.ivaPct / 100));
-    const f = { id: 'd' + n, tipo: 'FACT', serie: db.cfg.serie, num: 100000 + n, uuid: uuidDe(n), f: ctx.ts, cuenta: c.id, nit: d.nit || 'CF', nombre: d.nombre || 'Consumidor final', bruto: c.total, desc: r2(c.total - neto), total: neto, exento, base: r2(gravado - iva), iva, estado: 'vigente', us: ctx.u, area: c.area };
+    const cert = db.cfg.doc === 'certificador'; // el certificador es opcional: sin él sale comprobante interno
+    const f = { id: 'd' + n, tipo: cert ? 'FACT' : 'COMP', serie: cert ? db.cfg.serie : db.cfg.serieInt, num: 100000 + n, uuid: cert ? uuidDe(n) : null, sat: null, f: ctx.ts, cuenta: c.id, nit: d.nit || 'CF', nombre: d.nombre || 'Consumidor final', bruto: c.total, desc: r2(c.total - neto), total: neto, exento, base: r2(gravado - iva), iva, estado: 'vigente', us: ctx.u, area: c.area };
     db.dtes.push(f); db.ix.dte.set(f.id, f);
     c.dte = f.id; c.cerrada = ctx.ts;
     return f;
@@ -269,25 +270,25 @@
       const t = db.ix.turno.get(d.turno);
       if (!t || t.estado !== 'abierto') no('Abra su turno de caja antes de cobrar.');
       const neto = netoCuenta(c);
-      if (neto >= db.cfg.limiteCF && (!d.nit || d.nit === 'CF')) no(`Desde Q ${db.cfg.limiteCF.toLocaleString('en-US', { minimumFractionDigits: 2 })} la factura necesita NIT o CUI.`);
+      if (db.cfg.doc === 'certificador' && neto >= db.cfg.limiteCF && (!d.nit || d.nit === 'CF')) no(`Desde Q ${db.cfg.limiteCF.toLocaleString('en-US', { minimumFractionDigits: 2 })} la factura necesita NIT o CUI.`);
       const f = facturar(db, c, d, ctx);
       const pagos = (d.pagos || []).filter(p => p.monto > 0);
       if (!pagos.length && neto > 0) no('Registre al menos una forma de pago.');
       cobrar(db, c, f, pagos, t, ctx);
-      return { id: f.id, txt: `Emitió factura ${f.serie}-${f.num} por ${fQ(f.total)}` };
+      return { id: f.id, txt: `${f.tipo === 'FACT' ? 'Emitió factura' : 'Cobró'} ${f.serie}-${f.num} por ${fQ(f.total)}` };
     },
     'dte.notaCredito'(db, d, ctx) {
       const f = db.ix.dte.get(d.dte) || no('Documento no encontrado.');
-      if (f.tipo !== 'FACT') no('Solo se acredita una factura.');
-      if (f.estado !== 'vigente') no('Esa factura ya tiene nota de crédito.');
+      if (!['FACT', 'COMP'].includes(f.tipo)) no('Ese documento no se puede devolver.');
+      if (f.estado !== 'vigente') no('Ese documento ya tiene devolución.');
       if (!d.motivo || d.motivo.trim().length < 5) no('Escriba el motivo.');
       const n = ++db.seq.dte;
-      const nc = { id: 'd' + n, tipo: 'NCRE', serie: db.cfg.serie, num: 100000 + n, uuid: uuidDe(n), f: ctx.ts, cuenta: f.cuenta, nit: f.nit, nombre: f.nombre, bruto: -f.bruto, desc: -f.desc, total: -f.total, exento: -f.exento, base: -f.base, iva: -f.iva, estado: 'vigente', us: ctx.u, area: f.area, origen: f.id, motivo: d.motivo };
+      const nc = { id: 'd' + n, tipo: f.tipo === 'FACT' ? 'NCRE' : 'DEV', serie: f.serie, num: 100000 + n, uuid: f.tipo === 'FACT' ? uuidDe(n) : null, f: ctx.ts, cuenta: f.cuenta, nit: f.nit, nombre: f.nombre, bruto: -f.bruto, desc: -f.desc, total: -f.total, exento: -f.exento, base: -f.base, iva: -f.iva, estado: 'vigente', us: ctx.u, area: f.area, origen: f.id, motivo: d.motivo };
       db.dtes.push(nc); db.ix.dte.set(nc.id, nc);
       f.estado = 'acreditada'; f.nc = nc.id;
       const c = db.ix.cuenta.get(f.cuenta); c.estado = 'anulada';
       if (d.reingresar) for (const k of db.ix.cargosDe.get(c.id)) if (k.prod && k.partes && !k.rev) for (const x of k.partes) entrar(db, { prod: k.prod, lote: x.lote, bod: k.bod, cant: x.cant, costo: x.costo, tipo: 'Devolución', doc: `NCRE ${nc.num}`, ts: ctx.ts, us: ctx.u });
-      return { id: nc.id, txt: `Emitió nota de crédito ${nc.serie}-${nc.num}` };
+      return { id: nc.id, txt: `${nc.tipo === 'NCRE' ? 'Emitió nota de crédito' : 'Registró devolución'} ${nc.serie}-${nc.num}` };
     },
     'dte.anular'(db, d, ctx) {
       const f = db.ix.dte.get(d.dte) || no('Documento no encontrado.');
@@ -299,6 +300,33 @@
       const c = db.ix.cuenta.get(f.cuenta); c.estado = 'anulada';
       for (const y of db.pagos) if (y.dte === f.id && y.turno) { const t = db.ix.turno.get(y.turno); if (t.estado === 'abierto') t.mov[y.forma] = r2((t.mov[y.forma] || 0) - y.monto); }
       return { txt: `Anuló factura ${f.serie}-${f.num}` };
+    },
+    'dte.anotar'(db, d) { // factura hecha fuera del sistema, por ejemplo en el portal de la SAT
+      const f = db.ix.dte.get(d.dte) || no('Documento no encontrado.');
+      if (!d.num) no('Escriba el número de factura.');
+      f.sat = { serie: d.serie || '', num: d.num };
+      return { txt: `Anotó factura ${d.serie || ''} ${d.num} en ${f.serie}-${f.num}` };
+    },
+    /* Mostrador: un solo paso. Baja del inventario, cobra y deja el documento. */
+    'venta.directa'(db, d, ctx) {
+      const t = db.ix.turno.get(d.turno);
+      if (!t || t.estado !== 'abierto') no('Abra la caja de farmacia antes de vender.');
+      if (!d.items || !d.items.length) no('Agregue al menos un producto.');
+      validarItems(db, d.items, ctx.ts);
+      const total = r2(d.items.reduce((a, it) => a + db.ix.prod.get(it.prod).venta * it.cant, 0));
+      if (db.cfg.doc === 'certificador' && total >= db.cfg.limiteCF && (!d.nit || d.nit === 'CF')) no(`Desde Q ${db.cfg.limiteCF.toLocaleString('en-US', { minimumFractionDigits: 2 })} la factura necesita NIT o CUI.`);
+      const pagos = (d.pagos || []).filter(p => p.monto > 0); const suma = pagos.reduce((a, p) => a + p.monto, 0);
+      if (Math.abs(suma - total) > .005) no(`Los pagos suman ${fQ(suma)} y el total es ${fQ(total)}.`);
+      const c = nuevaCuenta(db, { pac: d.pac || 'a1', tipo: 'farmacia' }, ctx);
+      cargar(db, c, d.items, ctx);
+      const f = facturar(db, c, d, ctx); cobrar(db, c, f, pagos, t, ctx);
+      return { id: f.id, txt: `Vendió ${d.items.length} ${d.items.length === 1 ? 'producto' : 'productos'} por ${fQ(f.total)}` };
+    },
+    'lote.bloquear'(db, d, ctx) {
+      const l = db.ix.lote.get(d.lote) || no('Lote no encontrado.');
+      if (d.bloquear && (!d.motivo || d.motivo.trim().length < 5)) no('Escriba el motivo.');
+      l.bloqueo = d.bloquear ? { motivo: d.motivo, us: ctx.u, f: ctx.ts } : null;
+      return { txt: `${d.bloquear ? 'Bloqueó' : 'Liberó'} el lote ${l.num}` };
     },
     'caja.abrir'(db, d, ctx) {
       if (db.turnos.some(t => t.us === ctx.u && t.estado === 'abierto')) no('Ya tiene un turno abierto.');
@@ -354,7 +382,7 @@
       for (const it of t.items) {
         let falta = it.cant;
         for (const l of db.ix.lotesDe.get(it.prod)) {
-          if (falta <= 0) break; if (l.vence < hoy) continue;
+          if (falta <= 0) break; if (l.vence < hoy || l.bloqueo) continue;
           const c = Math.min(l.ex[t.de] || 0, falta); if (c <= 0) continue;
           trasladar(db, { lote: l.id, de: t.de, a: 'TR', cant: c, doc: t.num, ts: ctx.ts, us: ctx.u }); t.partes.push({ lote: l.id, cant: c }); falta -= c;
         }
@@ -568,13 +596,14 @@
     let apartado = new Map();
     const cargoSeguro = (bod, p, cant) => { const k = p.id + bod, ya = apartado.get(k) || 0; if (disponible(db, p.id, bod, tsAct) - ya >= cant) { apartado.set(k, ya + cant); return { prod: p.id, bod, cant }; } return null; };
     let tsAct = ini.getTime();
+    const camas = Array.from({ length: 28 }, (_, i) => i + 1).sort(() => R() - .5).slice(0, 21); const salas = [1, 2, 4];
 
     for (let dd = 0; dd < dias; dd++) {
       const dia = ini.getTime() + dd * DIA; const fecha = new Date(dia); const dow = fecha.getDay(); const esHoy = dia === hoy;
       const ahora = new Date(ancla); const fraccion = esHoy ? Math.max(.42, Math.min(1, (ahora.getHours() - 6) / 12)) : 1;
       const base = (dow === 0 ? 120 : dow === 6 ? 170 : rnd(280, 360)) * escala;
       const atender = Math.round(base * fraccion);
-      const turnos = cajeros.map((u, i) => { const t = { id: 't' + (++db.seq.turno), caja: 'Caja ' + (i + 1), us: u, abre: dia + 7 * 3600000, fondo: 500, mov: {}, estado: 'abierto', cierre: null }; db.turnos.push(t); db.ix.turno.set(t.id, t); return t; });
+      const turnos = [...cajeros, 'u5'].map((u, i) => { const t = { id: 't' + (++db.seq.turno), caja: i === 2 ? 'Caja Farmacia' : 'Caja ' + (i + 1), us: u, abre: dia + 7 * 3600000, fondo: 500, mov: {}, estado: 'abierto', cierre: null }; db.turnos.push(t); db.ix.turno.set(t.id, t); return t; });
 
       /* Compras: cada 3 días, lo que está por debajo del mínimo */
       if (dd % 3 === 1) {
@@ -615,15 +644,18 @@
         else if (tipo === 'farmacia') addMed('FX', rnd(1, 5));
         else if (tipo === 'laboratorio') { for (let k = rnd(1, 3); k > 0; k--) items.push({ serv: de(svs.l).id, cant: 1 }); if (R() < .3) items.push({ serv: de(svs.i).id, cant: 1 }); }
         else if (tipo === 'emergencia') { items.push({ serv: svId('S010'), cant: 1 }); items.push({ serv: de(svs.e).id, cant: 1 }); addMed('EM', rnd(1, 4)); addIns('EM', rnd(1, 3)); }
-        else if (tipo === 'encamamiento') { const n = rnd(1, 4); items.push({ serv: svId('S040'), cant: n }, { serv: svId('S042'), cant: n }, { serv: svId('S043'), cant: n }); addMed('EN', rnd(3, 7)); addIns('EN', rnd(2, 5)); c.cama = 'Cama ' + rnd(1, 28); }
+        else if (tipo === 'encamamiento') { const n = rnd(1, 4); items.push({ serv: svId('S040'), cant: n }, { serv: svId('S042'), cant: n }, { serv: svId('S043'), cant: n }); addMed('EN', rnd(3, 7)); addIns('EN', rnd(2, 5)); }
         else { const mayor = R() < .55; items.push({ serv: svId(mayor ? 'S051' : 'S050'), cant: 1 }, { serv: svId(mayor ? 'S052' : 'S053'), cant: 1 }, { serv: svId('S054'), cant: 1 }, { serv: svId('S055'), cant: 1 }); addMed('QX', rnd(3, 6)); addIns('QX', rnd(5, 10)); }
         if ((tipo === 'cirugia' || tipo === 'emergencia') && R() < .6) { const p = de(ctrl); const b = tipo === 'cirugia' ? 'QX' : 'EM'; if (cargoSeguro(b, p, 1)) { const m = de(C.MEDICOS); items.push({ prod: p.id, bod: b, cant: 1, receta: { num: 'RX-' + rnd(100000, 999999), medico: m[0], colegiado: m[1] } }); } }
         cargar(db, c, items, ctx);
-        const quedaAbierta = (esHoy && (R() < .16 || tipo === 'encamamiento')) || (tipo === 'encamamiento' && dia > hoy - 3 * DIA);
+        let quedaAbierta = (esHoy && (R() < .16 || tipo === 'encamamiento')) || (tipo === 'encamamiento' && dia > hoy - 3 * DIA);
+        if (quedaAbierta && tipo === 'encamamiento') { if (camas.length) c.cama = 'Cama ' + camas.shift(); else quedaAbierta = false; }
+        if (esHoy && tipo === 'cirugia' && salas.length) quedaAbierta = true;
+        if (quedaAbierta && tipo === 'cirugia') { if (salas.length) c.cama = 'Quirófano ' + salas.shift(); else quedaAbierta = false; }
         if (R() < .045 && c.total > 0) { const pct = de([25, 50, 75, 100]); c.desc = { pct, motivo: 'Estudio socioeconómico', estado: 'aprobado', pide: 'u2', f: ts, resuelve: 'u11', fr: ts }; }
         if (esHoy && quedaAbierta && R() < .1 && c.total > 0) c.desc = { pct: de([25, 50]), motivo: 'Paciente refiere falta de ingresos', estado: 'pendiente', pide: 'u2', f: ts };
         if (quedaAbierta || c.total <= 0) continue;
-        const t = turnos[i % 2]; const neto = netoCuenta(c);
+        const t = tipo === 'farmacia' ? turnos[2] : turnos[i % 2]; const neto = netoCuenta(c);
         const nit = neto >= db.cfg.limiteCF ? (pac.nit !== 'CF' ? pac.nit : pac.dpi) : pac.nit;
         const f = facturar(db, c, { nit, nombre: nit === 'CF' ? 'Consumidor final' : pac.nombre }, { u: t.us, ts: ts + 1200000 });
         const credito = neto > 6000 && R() < .4;
@@ -636,7 +668,7 @@
       else turnos.forEach(t => { t.estado = 'abierto'; });
 
       /* Algo de nota de crédito histórica */
-      if (dd % 9 === 4 && db.dtes.length > 40 && !esHoy) { const f = db.dtes[db.dtes.length - rnd(5, 30)]; if (f.tipo === 'FACT' && f.estado === 'vigente') ops['dte.notaCredito'](db, { dte: f.id, motivo: 'Error en datos del cliente' }, { u: 'u10', ts: dia + 19 * 3600000 }); }
+      if (dd % 9 === 4 && db.dtes.length > 40 && !esHoy) { const f = db.dtes[db.dtes.length - rnd(5, 30)]; if (f.tipo !== 'DEV' && f.tipo !== 'NCRE' && f.estado === 'vigente') ops['dte.notaCredito'](db, { dte: f.id, motivo: 'Error en datos del cliente' }, { u: 'u10', ts: dia + 19 * 3600000 }); }
     }
 
     /* Trabajo pendiente para que cada rol tenga algo que hacer al entrar */
@@ -666,7 +698,7 @@
     for (let i = 0; i < 9; i++) ops['donacion.dinero'](db, { donante: C.DONANTES[i % 4], monto: rnd(5, 120) * 500, forma: 'Transferencia', nota: 'Para gastos de operación' }, { u: 'u10', ts: ini.getTime() + rnd(1, dias - 2) * DIA });
     /* Bitácora: los últimos movimientos de hoy para que no nazca vacía */
     const hoyDtes = db.dtes.filter(d => d.f >= hoy).slice(-60);
-    for (const d of hoyDtes) db.bitacora.push({ ts: d.f, u: d.us, disp: (db.ix.usr.get(d.us) || {}).disp || '', tipo: 'cuenta.facturar', txt: `Emitió factura ${d.serie}-${d.num} por ${fQ(d.total)}`, ok: true });
+    for (const d of hoyDtes) db.bitacora.push({ ts: d.f, u: d.us, disp: (db.ix.usr.get(d.us) || {}).disp || '', tipo: 'cuenta.facturar', txt: `Cobró ${d.serie}-${d.num} por ${fQ(d.total)}`, ok: true });
     db.bitacora.sort((a, b) => a.ts - b.ts);
     return db;
   };

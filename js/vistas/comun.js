@@ -31,24 +31,26 @@
   Docs.dte = function (id) {
     const d = db().ix.dte.get(id), c = db().ix.cuenta.get(d.cuenta), pac = db().ix.pac.get(c.pac);
     const lineas = db().ix.cargosDe.get(c.id).filter(k => !k.rev);
-    const titulo = d.tipo === 'FACT' ? 'Factura electrónica' : 'Nota de crédito electrónica';
+    const titulo = { FACT: 'Factura electrónica', NCRE: 'Nota de crédito electrónica', COMP: 'Comprobante de venta', DEV: 'Devolución' }[d.tipo];
     const mismoMes = new Date(d.f).getMonth() === new Date().getMonth() && new Date(d.f).getFullYear() === new Date().getFullYear();
-    const puede = A.puede('nota.credito') && d.tipo === 'FACT' && d.estado === 'vigente';
+    const puede = A.puede('nota.credito') && (d.tipo === 'FACT' || d.tipo === 'COMP') && d.estado === 'vigente';
+    const anota = d.tipo === 'COMP' && !d.sat && d.estado === 'vigente' && (A.puede('cuenta.facturar') || A.puede('nota.credito'));
     const h = U.hoja({
       titulo, sub: `${d.serie}-${d.num} · ${U.fh(d.f)}`, ancho: 640, cuerpo: `<div class="doc">${cabDoc(titulo, `Serie ${d.serie} · No. ${d.num}`)}
-      <dl><dt>Autorización</dt><dd class="num">${e(d.uuid)}</dd><dt>Certificador</dt><dd>Certificador de demostración</dd><dt>Fecha</dt><dd>${U.fh(d.f)}</dd><dt>Receptor</dt><dd>${e(d.nombre)}</dd><dt>NIT o CUI</dt><dd>${e(d.nit)}</dd><dt>Paciente</dt><dd>${e(pac.nombre)} · ${e(pac.exp)}</dd><dt>Cuenta</dt><dd>${e(c.num)}</dd>${d.motivo ? `<dt>Motivo</dt><dd>${e(d.motivo)}</dd>` : ''}${d.estado !== 'vigente' ? `<dt>Estado</dt><dd>${A.etEstado(d.estado)}</dd>` : ''}</dl>
+      <dl>${d.uuid ? `<dt>Autorización</dt><dd class="num">${e(d.uuid)}</dd><dt>Certificador</dt><dd>Certificador de demostración</dd>` : ''}${d.sat ? `<dt>Factura SAT</dt><dd>${e(d.sat.serie)} ${e(d.sat.num)}</dd>` : ''}<dt>Fecha</dt><dd>${U.fh(d.f)}</dd><dt>Receptor</dt><dd>${e(d.nombre)}</dd><dt>NIT o CUI</dt><dd>${e(d.nit)}</dd><dt>Paciente</dt><dd>${e(pac.nombre)} · ${e(pac.exp)}</dd><dt>Cuenta</dt><dd>${e(c.num)}</dd>${d.motivo ? `<dt>Motivo</dt><dd>${e(d.motivo)}</dd>` : ''}${d.estado !== 'vigente' ? `<dt>Estado</dt><dd>${A.etEstado(d.estado)}</dd>` : ''}</dl>
       ${U.tabla({ contar: false, por: 500, filas: lineas, cols: [{ t: 'Descripción', h: k => e(k.nombre) }, { t: 'Cant.', der: 1, h: k => U.n(k.cant) }, { t: 'Precio', der: 1, h: k => Q(k.precio) }, { t: 'Total', der: 1, h: k => Q(k.total) }] })}
       <div class="totales">${d.desc ? `<div><span>Subtotal</span><span>${Q(d.bruto)}</span></div><div><span>Descuento social</span><span>-${Q(d.desc)}</span></div>` : ''}<div><span>Exento</span><span>${Q(d.exento)}</span></div><div><span>Gravado</span><span>${Q(d.base)}</span></div><div><span>IVA ${db().cfg.ivaPct} %</span><span>${Q(d.iva)}</span></div><div class="gran"><span>Total</span><span>${Q(d.total)}</span></div></div></div>`,
-      pie: `${puede ? `<button class="btn" data-a="corregir">${mismoMes ? 'Anular o acreditar' : 'Nota de crédito'}</button>` : ''}${imprimir}`,
+      pie: `${puede ? `<button class="btn" data-a="corregir">${mismoMes ? 'Anular o devolver' : 'Devolución'}</button>` : ''}${anota ? `<button class="btn" data-a="anotar">Anotar factura SAT</button>` : ''}${imprimir}`,
       acciones: {
         ...accImp,
+        anotar() { A.anotarFactura(id, () => h.cerrar()); },
         corregir() {
           const v = U.hoja({
-            titulo: mismoMes ? 'Corregir factura' : 'Nota de crédito', sub: `${d.serie}-${d.num} · ${Q(d.total)}`, ancho: 480,
-            cuerpo: `<div class="nota info">${U.ic('info')}<span>La anulación solo procede dentro del mes de emisión. Después se emite nota de crédito.</span></div>
+            titulo: mismoMes ? 'Corregir documento' : 'Devolución', sub: `${d.serie}-${d.num} · ${Q(d.total)}`, ancho: 480,
+            cuerpo: `<div class="nota info">${U.ic('info')}<span>La anulación solo procede dentro del mes de emisión. Después se registra la devolución.</span></div>
               <div class="campo"><label for="mot">Motivo</label><textarea id="mot"></textarea></div>
               <label class="peq"><input type="checkbox" id="rein"> Reingresar los productos al inventario</label>`,
-            pie: `${mismoMes ? `<button class="btn" data-a="anular">Anular</button>` : ''}<button class="btn pri" data-a="nc">Emitir nota de crédito</button>`,
+            pie: `${mismoMes ? `<button class="btn" data-a="anular">Anular</button>` : ''}<button class="btn pri" data-a="nc">${d.tipo === 'FACT' ? 'Emitir nota de crédito' : 'Registrar devolución'}</button>`,
             acciones: {
               async anular() { const r = await U.hacer('dte.anular', { dte: id, motivo: v.cuerpo.querySelector('#mot').value }, true); if (r.ok) { v.cerrar(); h.cerrar(); A.repintar(); } },
               async nc() { const r = await U.hacer('dte.notaCredito', { dte: id, motivo: v.cuerpo.querySelector('#mot').value, reingresar: v.cuerpo.querySelector('#rein').checked }, true); if (r.ok) { v.cerrar(); h.cerrar(); Docs.dte(r.id); A.repintar(); } },
@@ -90,6 +92,10 @@
       <dl><dt>Autorización</dt><dd class="num">${e(d.uuid)}</dd><dt>Donante</dt><dd>${e(d.donante)}</dd><dt>NIT</dt><dd>${e(d.nit)}</dd><dt>Fecha</dt><dd>${U.fecha(d.f)}</dd><dt>Tipo</dt><dd>${e(d.tipo)}</dd><dt>Valor</dt><dd><b>${Q(d.valor)}</b></dd>${d.nota ? `<dt>Nota</dt><dd>${e(d.nota)}</dd>` : ''}</dl>
       ${d.lineas.length ? U.tabla({ contar: false, por: 200, filas: d.lineas, cols: [{ t: 'Producto', h: i => e(db().ix.prod.get(i.prod).nombre) }, { t: 'Lote', h: i => e(db().ix.lote.get(i.lote).num) }, { t: 'Cant.', der: 1, h: i => U.n(i.cant) }, { t: 'Valor', der: 1, h: i => Q(i.cant * i.costo) }] }) : ''}</div>`,
     });
+  };
+
+  A.anotarFactura = function (id, listo) {
+    const v = U.hoja({ titulo: 'Anotar factura SAT', sub: 'Factura hecha en Agencia Virtual u otro sistema', dialogo: true, cuerpo: `<div class="rejilla"><div class="campo"><label for="fs">Serie</label><input id="fs" type="text"></div><div class="campo"><label for="fn">Número</label><input id="fn" type="text" inputmode="numeric"></div></div>`, pie: `<button class="btn pri" data-a="ok">Guardar</button>`, acciones: { async ok() { const r = await U.hacer('dte.anotar', { dte: id, serie: v.cuerpo.querySelector('#fs').value.trim(), num: v.cuerpo.querySelector('#fn').value.trim() }, 'Factura anotada.'); if (r.ok) { v.cerrar(); if (listo) listo(); } } } });
   };
 
   /* ---------- fichas ---------- */
@@ -158,10 +164,10 @@
         <div class="ficha" style="margin:0"><div><span>Existencia</span><b>${U.n(p.qty)}</b></div><div><span>Costo promedio</span><b>${Q(M.promedio(p))}</b></div><div><span>Valor</span><b>${Q(p.valor)}</b></div><div><span>Precio de venta</span><b>${Q(p.venta)}</b></div><div><span>Mínimo y máximo</span><b>${U.n(p.min)} / ${U.n(p.max)}</b></div><div><span>Registro sanitario</span><b>${e(p.registro || 'No aplica')}</b></div></div>
         <h3>Por bodega</h3><div class="acciones">${bods.map(b => U.et(`${b.nombre}: ${U.n(p.ex[b.id])}`)).join('') || '<span class="mudo">Sin existencia</span>'}</div>
         <h3>Lotes, primero lo que vence primero</h3>
-        ${U.tabla({ contar: false, por: 50, filas: lotes, vacioT: 'Sin lotes con existencia', cols: [{ t: 'Lote', h: l => e(l.num) }, { t: 'Vence', h: l => A.etVence(l.vence) }, { t: 'Fondo', h: l => e(l.fondo) }, { t: 'Existencia', der: 1, h: l => U.n(Object.values(l.ex).reduce((a, b) => a + b, 0)) }] })}
+        ${U.tabla({ contar: false, por: 50, filas: lotes, vacioT: 'Sin lotes con existencia', cols: [{ t: 'Lote', h: l => `${e(l.num)}${l.bloqueo ? ' ' + U.et('Bloqueado', 'alerta') : ''}` }, { t: 'Vence', h: l => A.etVence(l.vence) }, { t: 'Fondo', h: l => e(l.fondo) }, { t: 'Existencia', der: 1, h: l => U.n(Object.values(l.ex).reduce((a, b) => a + b, 0)) }, { t: '', der: 1, h: l => `<button class="ojo" data-a="rastro" data-id="${l.id}" aria-label="Rastrear lote" title="Rastrear lote">${U.ic('route')}</button>` }] })}
         <h3>Últimos movimientos</h3>
         ${A.tablaKardex(movs)}`,
-      acciones: { editar() { A.formProducto(p, () => { h.cerrar(); A.fichaProducto(id); }); } },
+      acciones: { editar() { A.formProducto(p, () => { h.cerrar(); A.fichaProducto(id); }); }, rastro(l) { U.pila.slice().forEach(x => x.cerrar()); A.st.inventario = A.st.inventario || {}; A.st.inventario.rl = l; location.hash = '#/inventario/rastreo'; } },
     });
   };
   A.tablaKardex = (filas, o = {}) => U.tabla({

@@ -21,17 +21,17 @@
 
   /* Roles: qué pantallas y qué acciones tiene cada uno */
   C.ROLES = {
-    direccion: { nombre: 'Dirección', desc: 'Junta y administración general. Ve todo y aprueba compras grandes.', vistas: ['inicio', 'cuentas', 'inventario', 'compras', 'ley', 'reportes', 'bitacora', 'usuarios', 'config'], acciones: ['oc.aprobar', 'ajuste.aprobar', 'descuento.resolver', 'config', 'usuarios', 'solicitud.resolver'] },
+    direccion: { nombre: 'Dirección', desc: 'Junta y administración general. Ve todo y aprueba compras grandes.', vistas: ['inicio', 'mapa', 'cuentas', 'inventario', 'compras', 'ley', 'reportes', 'bitacora', 'usuarios', 'config'], acciones: ['lote.bloquear', 'oc.aprobar', 'ajuste.aprobar', 'descuento.resolver', 'config', 'usuarios', 'solicitud.resolver'] },
     admision: { nombre: 'Admisión', desc: 'Registra pacientes y abre cuentas.', vistas: ['inicio', 'admision', 'cuentas'], acciones: ['paciente', 'cuenta.abrir', 'cuenta.cargo.servicio', 'descuento.pedir'] },
     caja: { nombre: 'Caja', desc: 'Cobra, factura y cierra su turno.', vistas: ['inicio', 'caja', 'cuentas', 'admision'], acciones: ['caja', 'cuenta.facturar', 'cuenta.cargo.servicio', 'paciente', 'cuenta.abrir', 'descuento.pedir'] },
-    farmacia: { nombre: 'Farmacia (regente)', desc: 'Despacha pedidos y recetas. Lleva el libro de controlados.', vistas: ['inicio', 'farmacia', 'inventario', 'cuentas'], acciones: ['farmacia', 'cuenta.cargo.producto', 'inv.solicitar', 'inv.recibir', 'inv.baja', 'inv.ajuste', 'compras.solicitar'] },
-    enfermeria: { nombre: 'Enfermería', desc: 'Pide a farmacia y carga lo que usa cada paciente.', vistas: ['inicio', 'sala', 'cuentas'], acciones: ['pedido', 'cuenta.cargo.servicio', 'inv.solicitar', 'inv.recibir'] },
-    quirofano: { nombre: 'Quirófano', desc: 'Registra el consumo de cada cirugía.', vistas: ['inicio', 'sala', 'cuentas', 'inventario'], acciones: ['pedido', 'cuenta.cargo.producto', 'cuenta.cargo.servicio', 'inv.solicitar', 'inv.recibir', 'compras.solicitar'] },
-    bodega: { nombre: 'Bodega central', desc: 'Recibe, ubica, traslada y cuenta el inventario.', vistas: ['inicio', 'inventario', 'compras'], acciones: ['inv.enviar', 'inv.recibir', 'inv.solicitar', 'inv.ajuste', 'inv.baja', 'inv.conteo', 'compras.recibir', 'donacion', 'producto'] },
+    farmacia: { nombre: 'Farmacia (regente)', desc: 'Vende y cobra en mostrador, despacha pedidos y lleva los controlados.', vistas: ['inicio', 'farmacia', 'mapa', 'inventario', 'cuentas'], acciones: ['caja', 'cuenta.facturar', 'lote.bloquear', 'farmacia', 'cuenta.cargo.producto', 'inv.solicitar', 'inv.recibir', 'inv.baja', 'inv.ajuste', 'compras.solicitar'] },
+    enfermeria: { nombre: 'Enfermería', desc: 'Pide a farmacia y carga lo que usa cada paciente.', vistas: ['inicio', 'sala', 'mapa', 'cuentas'], acciones: ['pedido', 'cuenta.cargo.servicio', 'inv.solicitar', 'inv.recibir'] },
+    quirofano: { nombre: 'Quirófano', desc: 'Registra el consumo de cada cirugía.', vistas: ['inicio', 'sala', 'mapa', 'cuentas', 'inventario'], acciones: ['pedido', 'cuenta.cargo.producto', 'cuenta.cargo.servicio', 'inv.solicitar', 'inv.recibir', 'compras.solicitar'] },
+    bodega: { nombre: 'Bodega central', desc: 'Recibe, ubica, traslada y cuenta el inventario.', vistas: ['inicio', 'inventario', 'compras', 'mapa'], acciones: ['lote.bloquear', 'inv.enviar', 'inv.recibir', 'inv.solicitar', 'inv.ajuste', 'inv.baja', 'inv.conteo', 'compras.recibir', 'donacion', 'producto'] },
     compras: { nombre: 'Compras', desc: 'Convierte solicitudes en órdenes de compra.', vistas: ['inicio', 'compras', 'inventario'], acciones: ['compras.solicitar', 'solicitud.resolver', 'compras.oc', 'proveedor', 'producto'] },
     contabilidad: { nombre: 'Contabilidad', desc: 'Libros de ley, cuentas por pagar y partidas.', vistas: ['inicio', 'ley', 'compras', 'inventario', 'cuentas', 'reportes', 'bitacora'], acciones: ['compras.pagar', 'ajuste.aprobar', 'nota.credito'] },
     social: { nombre: 'Trabajo social', desc: 'Resuelve los descuentos por estudio socioeconómico.', vistas: ['inicio', 'social', 'cuentas', 'admision'], acciones: ['descuento.resolver', 'descuento.pedir'] },
-    auditoria: { nombre: 'Auditoría interna', desc: 'Solo lectura de todo el sistema.', vistas: ['inicio', 'cuentas', 'inventario', 'compras', 'ley', 'reportes', 'bitacora'], acciones: [] },
+    auditoria: { nombre: 'Auditoría interna', desc: 'Solo lectura de todo el sistema.', vistas: ['inicio', 'mapa', 'cuentas', 'inventario', 'compras', 'ley', 'reportes', 'bitacora'], acciones: [] },
   };
 
   C.USUARIOS = [

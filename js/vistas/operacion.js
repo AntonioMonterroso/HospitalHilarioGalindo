@@ -22,7 +22,7 @@
     const abiertas = d.cuentas.filter(c => c.estado === 'abierta' && c.total > 0);
     const dia = new Date().getDate();
     if (r === 'direccion') { add(porAprobar.length, 'Órdenes por aprobar', `Superan ${Q(d.cfg.limiteAprobacion)}`, '#/compras/ordenes', 'ambar'); add(ajustes.length, 'Ajustes de inventario por aprobar', 'Nadie aprueba lo que pidió', '#/inventario/ajustes', 'ambar'); add(desc.length, 'Descuentos sociales pendientes', 'Los resuelve Trabajo social o Dirección', '#/cuentas', 'ambar'); add(vencidos.length, 'Lotes vencidos con existencia', 'Hay que darlos de baja con acta', '#/inventario/vencimientos', 'alerta'); }
-    if (r === 'farmacia') { add(pedidos.length, 'Pedidos de sala por despachar', pedidos.some(p => p.urgente) ? 'Hay al menos uno urgente' : 'En orden de llegada', '#/farmacia', pedidos.some(p => p.urgente) ? 'alerta' : 'ambar'); add(d.traslados.filter(t => t.estado === 'en camino' && t.a === 'FX').length, 'Traslados por recibir', 'Vienen de Bodega central', '#/inventario/traslados'); add(vencidos.filter(l => l.ex.FX > 0).length, 'Lotes vencidos en farmacia', 'El sistema ya no los despacha', '#/inventario/vencimientos', 'alerta'); if (dia <= 10) add(1, 'Balance mensual de controlados', `Vence el día 10. Quedan ${10 - dia} días`, '#/farmacia/control', 'alerta'); }
+    if (r === 'farmacia') { add(pedidos.length, 'Pedidos de sala por despachar', pedidos.some(p => p.urgente) ? 'Hay al menos uno urgente' : 'En orden de llegada', '#/farmacia/pedidos', pedidos.some(p => p.urgente) ? 'alerta' : 'ambar'); add(d.traslados.filter(t => t.estado === 'en camino' && t.a === 'FX').length, 'Traslados por recibir', 'Vienen de Bodega central', '#/inventario/traslados'); add(vencidos.filter(l => l.ex.FX > 0).length, 'Lotes vencidos en farmacia', 'El sistema ya no los despacha', '#/inventario/vencimientos', 'alerta'); if (dia <= 10) add(1, 'Balance mensual de controlados', `Vence el día 10. Quedan ${10 - dia} días`, '#/farmacia/control', 'alerta'); }
     if (r === 'caja') { add(abiertas.length, 'Cuentas por cobrar hoy', 'Abiertas con cargos', '#/caja', 'ambar'); if (!A.turno()) add(1, 'Turno de caja sin abrir', 'Ábralo para poder cobrar', '#/caja', 'alerta'); }
     if (r === 'admision') { add(d.cuentas.filter(c => c.estado === 'abierta' && c.total === 0).length, 'Cuentas abiertas sin cargos', 'Revise si el paciente sigue en espera', '#/cuentas'); }
     if (r === 'enfermeria' || r === 'quirofano') { const a = r === 'quirofano' ? 'QX' : 'EN'; add(d.traslados.filter(t => t.estado === 'en camino' && t.a === a).length, 'Traslados por recibir', 'Confirme lo que llegó', '#/sala', 'ambar'); add(d.pedidos.filter(p => p.estado === 'pendiente' && p.us === M.sesion.id).length, 'Mis pedidos en farmacia', 'Se actualizan solos', '#/sala'); add(d.cuentas.filter(c => c.estado === 'abierta' && (r === 'quirofano' ? c.tipo === 'cirugia' : c.tipo === 'encamamiento')).length, 'Pacientes activos', r === 'quirofano' ? 'Cirugías de hoy' : 'En encamamiento', '#/sala'); }
@@ -37,8 +37,10 @@
     const b = db().bitacora; const ult = b.slice(-14).reverse();
     return `<ul class="vivo" aria-live="off">${ult.map(x => { const d = (x.disp || '').split(' · '); const i = d[0] === 'Tablet' ? 'tablet' : d[0] === 'Teléfono' ? 'smartphone' : 'monitor'; return `<li class="${x.ok ? '' : 'mal'}">${U.ic(i)}<span>${e(x.txt)}<small>${e(A.nomU(x.u))} · ${e(d[1] || '')}</small></span><time>${U.hora(x.ts)}</time></li>`; }).join('')}</ul>`;
   };
+  A.vivoHtml = vivoHtml; A.pendientesRol = pendientesRol; A.desdeHoy = desdeHoy;
   A.vistas.inicio = {
     html() {
+      if (M.sesion.rol === 'direccion') return A.tablero();
       const d = db(), hoy = A.hoy(), r = M.sesion.rol, dtes = desdeHoy();
       const ing = dtes.filter(x => x.estado === 'vigente').reduce((a, x) => a + x.total, 0);
       const cuentasHoy = (() => { let n = 0; for (let i = d.cuentas.length - 1; i >= 0 && d.cuentas[i].abierta >= hoy; i--) n++; return n; })();
@@ -107,7 +109,7 @@
       if (filas.length >= 3000) break;
     }
     const nAb = cs.filter(c => c.estado === 'abierta').length;
-    return `${cab('Cuentas de pacientes', 'Todo lo que un paciente consume queda en su cuenta hasta que Caja factura.')}
+    return `${cab('Cuentas de pacientes', 'Todo lo que un paciente consume queda en su cuenta hasta que Caja cobra.')}
       <div class="filtros">${U.busca('bc', st.bc, 'Número de cuenta, paciente o expediente')}${U.chips([['hoy', 'Hoy'], ['abierta', `Abiertas (${U.n(nAb)})`], ['por cobrar', 'Crédito'], ['todas', 'Todas']], est, 'est')}</div>
       ${U.tabla({ filas, pag: st.pag_t, clic: 'ver', vacioT: 'Sin cuentas aquí', vacio: 'Cambie el filtro o busque por paciente.', cols: [{ t: 'Cuenta', h: c => `${e(c.num)}<span class="t-sub">${e(pacDe(c).nombre)}</span>` }, { t: 'Abierta', h: c => U.fh(c.abierta) }, { t: 'Tipo', h: c => e(C.TIPOS_CUENTA[c.tipo].nombre) }, { t: 'Estado', h: c => A.etEstado(c.estado) + (c.desc && c.desc.estado === 'pendiente' ? ' ' + U.et('Descuento', 'ambar') : '') }, { t: 'Total', der: 1, h: c => Q(c.total) }] })}`;
   }
@@ -117,7 +119,7 @@
     const puedeCargar = abierta && (A.puede('cuenta.cargo.producto') || A.puede('cuenta.cargo.servicio'));
     const puedeCobrar = abierta && A.puede('cuenta.facturar') && c.total > 0;
     const pri = puedeCobrar ? `<button class="btn pri" data-a="cobrar" data-id="${id}">${U.ic('wallet')}Cobrar ${Q(neto)}</button>` : '';
-    const sec = `${puedeCargar ? `<button class="btn ${pri ? '' : 'pri'}" data-a="cargo" data-id="${id}">${U.ic('plus')}Agregar cargo</button>` : ''}${abierta && !c.desc && A.puede('descuento.pedir') ? `<button class="btn" data-a="desc" data-id="${id}">Pedir descuento</button>` : ''}${c.dte ? `<button class="btn" data-a="dte" data-id="${c.dte}">${U.ic('eye')}Ver factura</button>` : ''}`;
+    const sec = `${puedeCargar ? `<button class="btn ${pri ? '' : 'pri'}" data-a="cargo" data-id="${id}">${U.ic('plus')}Agregar cargo</button>` : ''}${abierta && !c.desc && A.puede('descuento.pedir') ? `<button class="btn" data-a="desc" data-id="${id}">Pedir descuento</button>` : ''}${c.dte ? `<button class="btn" data-a="dte" data-id="${c.dte}">${U.ic('eye')}Ver documento</button>` : ''}`;
     const dNota = c.desc && c.desc.estado === 'pendiente' ? `<div class="nota">${U.ic('clock')}<span style="flex:1">Descuento social de ${c.desc.pct} % esperando resolución. Motivo: ${e(c.desc.motivo)}.</span>${A.puede('descuento.resolver') ? `<button class="btn chico" data-a="resolver" data-id="${id}">Resolver</button>` : ''}</div>` : '';
     return `<p class="peq" style="margin-bottom:8px"><a href="#/cuentas">Cuentas</a></p>
       ${cab(c.num, '', sec + pri)}
@@ -158,16 +160,16 @@
   /* ---------- caja ---------- */
   A.cobrar = function (id) {
     const t = A.turno(); if (!t) return U.aviso('Abra su turno de caja antes de cobrar.', 'mal');
-    const c = db().ix.cuenta.get(id), p = pacDe(c), neto = M.netoCuenta(c), lim = db().cfg.limiteCF;
+    const c = db().ix.cuenta.get(id), p = pacDe(c), neto = M.netoCuenta(c), lim = db().cfg.limiteCF, cert = db().cfg.doc === 'certificador';
     const h = U.hoja({
-      titulo: 'Cobrar y facturar', sub: `${c.num} · ${p.nombre}`, ancho: 520,
+      titulo: 'Cobrar', sub: `${c.num} · ${p.nombre}`, ancho: 520,
       cuerpo: `<div class="totales" style="margin:0;width:100%"><div class="gran" style="border:0;padding:0"><span>Total</span><span>${Q(neto)}</span></div></div>
-        ${neto >= lim ? `<div class="nota">${U.ic('info')}<span>Desde ${Q(lim)} la factura necesita NIT o CUI.</span></div>` : ''}
+        ${cert && neto >= lim ? `<div class="nota">${U.ic('info')}<span>Desde ${Q(lim)} la factura necesita NIT o CUI.</span></div>` : ''}
         <div class="rejilla"><div class="campo"><label for="ni">NIT o CUI</label><input id="ni" type="text" value="${e(p.nit !== 'CF' ? p.nit : (neto >= lim ? p.dpi : 'CF'))}"></div><div class="campo"><label for="no">Nombre en factura</label><input id="no" type="text" value="${e(p.nit === 'CF' && neto < lim ? 'Consumidor final' : p.nombre)}"></div></div>
         <div class="rejilla"><div class="campo"><label for="f1">Forma de pago</label><select id="f1">${['Efectivo', 'Tarjeta', 'Transferencia', 'Cheque'].map(x => `<option>${x}</option>`).join('')}</select></div><div class="campo"><label for="m1">Monto</label><input id="m1" type="number" step="0.01" value="${neto.toFixed(2)}"></div></div>
         <div class="rejilla"><div class="campo"><label for="f2">Segunda forma (opcional)</label><select id="f2"><option value="">Ninguna</option>${['Efectivo', 'Tarjeta', 'Transferencia', 'Cheque'].map(x => `<option>${x}</option>`).join('')}</select></div><div class="campo"><label for="m2">Monto</label><input id="m2" type="number" step="0.01" value="0.00"></div></div>
         <div class="campo"><label for="re">Efectivo recibido</label><input id="re" type="number" step="0.01"><span class="ayuda" id="vu">Escríbalo para calcular el vuelto.</span></div>`,
-      pie: `<button class="btn" data-cerrar>Cancelar</button><button class="btn pri" data-a="ok">Emitir factura</button>`,
+      pie: `<button class="btn" data-cerrar>Cancelar</button><button class="btn pri" data-a="ok">${cert ? 'Cobrar y certificar' : 'Cobrar'}</button>`,
       acciones: {
         async ok() {
           const q = s => h.cuerpo.querySelector(s); const pagos = [{ forma: q('#f1').value, monto: +q('#m1').value }];
@@ -202,7 +204,7 @@
       cobrar(id, b, ev) { ev.stopPropagation(); A.cobrar(id); },
       abrir() {
         const usada = db().turnos.filter(x => x.estado === 'abierto').map(x => x.caja);
-        const h = U.hoja({ titulo: 'Abrir turno', ancho: 420, cuerpo: `<div class="campo"><label for="cj">Caja</label><select id="cj">${['Caja 1', 'Caja 2', 'Caja 3', 'Caja Emergencia'].map(x => `<option ${usada.includes(x) ? 'disabled' : ''}>${x}${usada.includes(x) ? ' (en uso)' : ''}</option>`).join('')}</select></div><div class="campo"><label for="fo">Fondo inicial</label><input id="fo" type="number" step="0.01" value="500.00"></div>`, pie: `<button class="btn pri" data-a="ok">Abrir turno</button>`, acciones: { async ok() { const r = await U.hacer('caja.abrir', { caja: h.cuerpo.querySelector('#cj').value, fondo: +h.cuerpo.querySelector('#fo').value }, true); if (r.ok) h.cerrar(); } } });
+        const h = U.hoja({ titulo: 'Abrir turno', ancho: 420, cuerpo: `<div class="campo"><label for="cj">Caja</label><select id="cj">${['Caja 1', 'Caja 2', 'Caja Farmacia', 'Caja Emergencia'].map(x => `<option ${usada.includes(x) ? 'disabled' : ''}>${x}${usada.includes(x) ? ' (en uso)' : ''}</option>`).join('')}</select></div><div class="campo"><label for="fo">Fondo inicial</label><input id="fo" type="number" step="0.01" value="500.00"></div>`, pie: `<button class="btn pri" data-a="ok">Abrir turno</button>`, acciones: { async ok() { const r = await U.hacer('caja.abrir', { caja: h.cuerpo.querySelector('#cj').value, fondo: +h.cuerpo.querySelector('#fo').value }, true); if (r.ok) h.cerrar(); } } });
       },
       cerrar() {
         const t = A.turno(); const esp = M.r2(t.fondo + (t.mov.Efectivo || 0));
@@ -219,32 +221,20 @@
 
   /* ---------- farmacia ---------- */
   A.vistas.farmacia = {
-    ruta: p => ({ control: 'Control de sustancias', mostrador: 'Mostrador' }[p[1]] || 'Pedidos de sala'),
+    ruta: p => ({ control: 'Control de sustancias', pedidos: 'Pedidos de sala' }[p[1]] || 'Mostrador'),
     html(st, p) {
-      const tab = p[1] || 'pedidos'; const pend = db().pedidos.filter(x => x.estado === 'pendiente');
-      const tabs = U.tabs([{ id: 'pedidos', t: 'Pedidos de sala', n: pend.length }, { id: 'mostrador', t: 'Mostrador' }, { id: 'control', t: 'Control de sustancias' }], tab, 'farmacia');
+      const tab = p[1] || 'mostrador'; const pend = db().pedidos.filter(x => x.estado === 'pendiente');
+      const tabs = U.tabs([{ id: 'mostrador', t: 'Mostrador' }, { id: 'pedidos', t: 'Pedidos de sala', n: pend.length }, { id: 'control', t: 'Control de sustancias' }], tab, 'farmacia');
       if (tab === 'control') return controlSustancias(st, tabs);
-      if (tab === 'mostrador') {
-        const hoy = A.hoy(); const filas = db().cuentas.filter(c => c.tipo === 'farmacia' && c.abierta >= hoy).reverse();
-        return `${cab('Farmacia', 'Prepare la venta aquí. El paciente paga en Caja.', `<button class="btn pri" data-a="venta">${U.ic('plus')}Nueva venta</button>`)}${tabs}
-          ${U.tabla({ filas, pag: st.pag_t, clic: 'ver', vacioT: 'Sin ventas hoy', cols: [{ t: 'Cuenta', h: c => `${e(c.num)}<span class="t-sub">${e(pacDe(c).nombre)}</span>` }, { t: 'Hora', h: c => U.hora(c.abierta) }, { t: 'Estado', h: c => A.etEstado(c.estado) }, { t: 'Total', der: 1, h: c => Q(c.total) }] })}`;
-      }
+      if (tab === 'mostrador') return A.mostrador(st, tabs);
       const orden = pend.slice().sort((a, b) => (b.urgente - a.urgente) || (a.f - b.f));
       return `${cab('Farmacia', pend.length ? 'Los urgentes van primero. Cada despacho sale del lote que vence antes.' : 'Sin pedidos en espera.')}${tabs}
         ${U.tabla({ filas: orden, clic: 'pedido', por: 50, vacioT: 'Nada por despachar', vacio: 'Los pedidos de enfermería y quirófano aparecen aquí al instante.', cols: [{ t: 'Pedido', h: x => `${e(x.num)} ${x.urgente ? U.et('Urgente', 'alerta') : ''}<span class="t-sub">${e(pacDe(db().ix.cuenta.get(x.cuenta)).nombre)}</span>` }, { t: 'Área', h: x => e(x.area) }, { t: 'Pidió', h: x => e(A.nomU(x.us)) }, { t: 'Hace', h: x => Math.max(1, Math.round((Date.now() - x.f) / 60000)) + ' min' }, { t: 'Líneas', der: 1, h: x => x.items.length }] })}`;
     },
+    despues(el, st, p) { if ((p[1] || 'mostrador') === 'mostrador') A.mostradorListo(el, st); },
     acc: {
       ver(id) { location.hash = '#/cuentas/' + id; },
       pedido(id) { atenderPedido(id); },
-      venta() {
-        A.lineas({
-          titulo: 'Nueva venta', sub: 'Cliente de mostrador. Para otro paciente, ábrale cuenta desde Admisión.', modo: 'cargo', bod: 'FX', ok: 'Enviar a Caja',
-          async alAceptar(items) {
-            const a = await U.hacer('cuenta.abrir', { pac: 'a1', tipo: 'farmacia' }); if (!a.ok) return false;
-            const r = await U.hacer('cuenta.cargo', { cuenta: a.id, items }, 'Venta lista para cobrar en Caja.'); return r.ok;
-          },
-        });
-      },
       balance() { const m = A.st.farmacia.mes || A.meses()[0].k; const f = balanceFilas(m); U.csv('balance-controlados-' + m, [['Producto', 'Tipo', 'Saldo inicial', 'Entradas', 'Salidas', 'Saldo final'], ...f.map(r => [r.p.nombre, r.p.controlado, r.ini, r.ent, r.sal, r.fin])]); },
     },
   };
@@ -318,13 +308,13 @@
     html(st) {
       const pend = db().cuentas.filter(c => c.desc && c.desc.estado === 'pendiente' && !c.dte);
       const k = st.ms || A.meses()[0].k, en = A.enMes(k);
-      const hechas = db().dtes.filter(d => d.tipo === 'FACT' && d.desc > 0 && d.estado === 'vigente' && en(d.f));
+      const hechas = db().dtes.filter(d => (d.tipo === 'FACT' || d.tipo === 'COMP') && d.desc > 0 && d.estado === 'vigente' && en(d.f));
       const total = hechas.reduce((a, d) => a + d.desc, 0);
       return `${cab('Trabajo social', 'Cada descuento queda con su estudio socioeconómico. Es la ayuda que el Patronato puede demostrar.')}
         <section class="seccion"><h2>Por resolver</h2>${U.tabla({ contar: false, filas: pend, clic: 'res', vacioT: 'Nada pendiente', vacio: 'Admisión y Caja envían aquí las solicitudes.', cols: [{ t: 'Paciente', h: c => `${e(pacDe(c).nombre)}<span class="t-sub">${e(c.num)}</span>` }, { t: 'Motivo', h: c => e(c.desc.motivo) }, { t: 'Sugerido', der: 1, h: c => c.desc.pct + ' %' }, { t: 'Cuenta', der: 1, h: c => Q(c.total) }] })}</section>
         <section class="seccion"><div class="sub-cab"><h2>Ayuda otorgada</h2>${U.mesSel('ms', k, A.meses())}</div>
         <div class="cifras"><div class="cifra"><span>Monto condonado</span><b>${Q(total)}</b></div><div class="cifra"><span>Pacientes beneficiados</span><b>${U.n(hechas.length)}</b></div></div>
-        ${U.tabla({ filas: hechas.slice().reverse(), pag: st.pag_t, cols: [{ t: 'Factura', h: d => `${e(d.serie)}-${d.num}<span class="t-sub">${e(d.nombre)}</span>` }, { t: 'Fecha', h: d => U.fecha(d.f) }, { t: 'Área', h: d => e(d.area) }, { t: 'Cuenta', der: 1, h: d => Q(d.bruto) }, { t: 'Condonado', der: 1, h: d => Q(d.desc) }, { t: 'Pagó', der: 1, h: d => Q(d.total) }] })}</section>`;
+        ${U.tabla({ filas: hechas.slice().reverse(), pag: st.pag_t, cols: [{ t: 'Documento', h: d => `${e(d.serie)}-${d.num}<span class="t-sub">${e(d.nombre)}</span>` }, { t: 'Fecha', h: d => U.fecha(d.f) }, { t: 'Área', h: d => e(d.area) }, { t: 'Cuenta', der: 1, h: d => Q(d.bruto) }, { t: 'Condonado', der: 1, h: d => Q(d.desc) }, { t: 'Pagó', der: 1, h: d => Q(d.total) }] })}</section>`;
     },
     acc: { res: id => A.resolverDescuento(id) },
   };

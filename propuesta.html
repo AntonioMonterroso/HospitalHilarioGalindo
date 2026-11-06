@@ -4,239 +4,189 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Propuesta · Hospital Hilario Galindo</title>
-<meta name="description" content="Propuesta de sistema de inventario, compras y ventas para el Patronato Pro-Salud del Hospital Hilario Galindo.">
+<meta name="description" content="Propuesta de sistema de inventario, ventas y compras para el Patronato Pro-Salud del Hospital Hilario Galindo.">
 <meta name="robots" content="noindex">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231d4438'/%3E%3Cpath d='M13 7h6v6h6v6h-6v6h-6v-6H7v-6h6z' fill='%23f6f1e6'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/app.css">
-<style>
-  html { scroll-behavior: smooth; }
-  body { font-size: 1.0625rem; line-height: 1.55; }
-  .ancho { max-width: 1160px; margin: 0 auto; padding-inline: clamp(16px, 4vw, 40px); }
-  .portada { background: var(--pino); color: var(--sobre-pino); padding-block: clamp(40px, 7vw, 88px) 0; }
-  .portada .eti { font-size: var(--t-s); color: var(--sobre-pino-2); }
-  .portada h1 { font-size: clamp(2.3rem, 1.3rem + 4.2vw, 4.6rem); font-weight: 400; line-height: 1.04; max-width: 19ch; margin-top: var(--s4); text-wrap: balance; }
-  .portada p.lead { max-width: 54ch; margin-top: var(--s5); color: var(--sobre-pino-2); font-size: 1.1875rem; }
-  .portada .acciones { margin-top: var(--s5); gap: var(--s3); }
-  .portada .btn { min-height: 48px; padding-inline: 20px; font-size: var(--t-m); }
-  .portada .btn.claro { background: var(--papel); border-color: var(--papel); color: var(--pino); }
-  .portada .btn.linea { background: transparent; border-color: var(--pino-3); color: var(--sobre-pino); }
-  .vitrina { margin-top: clamp(32px, 5vw, 56px); margin-bottom: -96px; position: relative; }
-  .vitrina .marco { background: var(--tinta); padding: 8px; border-radius: 12px 12px 0 0; box-shadow: 0 20px 48px oklch(20% .03 170 / .28); }
-  .vitrina .pantalla { overflow: hidden; border-radius: 6px 6px 0 0; background: var(--papel); }
-  .vitrina iframe { border: 0; display: block; transform-origin: 0 0; pointer-events: none; }
-  section.b { padding-block: clamp(48px, 7vw, 88px); }
-  section.b.primera { padding-top: calc(96px + clamp(48px, 7vw, 88px)); }
-  section.b + section.b { border-top: 1px solid var(--linea-f); }
-  .dos-c { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.9fr); gap: clamp(24px, 5vw, 72px); align-items: start; }
-  .dos-c > h2, .tit { font-size: clamp(1.75rem, 1.3rem + 1.6vw, 2.5rem); font-weight: 400; }
-  .tit + p { color: var(--tinta-2); margin-top: var(--s3); }
-  ol.pasos { list-style: none; margin: 0; padding: 0; counter-reset: p; }
-  ol.pasos li { counter-increment: p; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: var(--s3); padding: var(--s4) 0; border-bottom: 1px solid var(--linea); }
-  ol.pasos li:first-child { border-top: 1px solid var(--tinta-3); }
-  ol.pasos li::before { content: counter(p); font: 400 1.75rem/1 var(--titulo); color: var(--pino-3); }
-  ol.pasos b { display: block; font-weight: 650; }
-  ol.pasos span { color: var(--tinta-2); }
-  .mod { display: grid; grid-template-columns: minmax(0, 200px) minmax(0, 1fr); gap: var(--s2) var(--s5); padding: var(--s4) 0; border-bottom: 1px solid var(--linea); }
-  .mod:first-child { border-top: 1px solid var(--tinta-3); }
-  .mod b { font: 500 1.1875rem var(--titulo); }
-  .mod p { color: var(--tinta-2); }
-  .tres { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--s5) clamp(24px, 4vw, 56px); margin-top: var(--s5); }
-  .tres h3 { font: 500 1.3125rem/1.2 var(--titulo); margin-bottom: var(--s2); }
-  .tres p { color: var(--tinta-2); }
-  .roles { columns: 2; column-gap: clamp(24px, 4vw, 56px); margin: 0; padding: 0; list-style: none; }
-  .roles li { break-inside: avoid; padding: var(--s3) 0; border-bottom: 1px solid var(--linea); }
-  .roles b { display: block; font-weight: 650; }
-  .roles span { color: var(--tinta-2); font-size: var(--t-m); }
-  .precios { background: var(--hoja-2); }
-  .iva { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; margin-top: var(--s4); }
-  .planes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: var(--s5); border-top: 1px solid var(--tinta-3); }
-  .plan { padding: var(--s5) clamp(16px, 3vw, 40px) var(--s5) 0; }
-  .plan + .plan { padding-left: clamp(16px, 3vw, 40px); padding-right: 0; border-left: 1px solid var(--linea-f); }
-  .plan h3 { font: 500 1.5rem var(--titulo); }
-  .plan .para { color: var(--tinta-2); margin-top: var(--s1); }
-  .monto { margin-top: var(--s5); }
-  .monto span { display: block; font-size: var(--t-s); font-weight: 600; color: var(--tinta-2); }
-  .monto b { display: block; font: 400 clamp(2.1rem, 1.5rem + 2vw, 3.1rem)/1.1 var(--titulo); font-variant-numeric: lining-nums tabular-nums; }
-  .monto.sec b { font-size: clamp(1.5rem, 1.25rem + 1vw, 2rem); }
-  .plan ul { margin: var(--s5) 0 0; padding: 0; list-style: none; }
-  .plan li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: var(--s2); padding: 6px 0; }
-  .plan li svg { margin-top: 4px; color: var(--pino-3); }
-  .cinco { margin-top: var(--s5); padding-top: var(--s4); border-top: 1px solid var(--linea-f); color: var(--tinta-2); max-width: 78ch; }
-  .fuera { margin-top: var(--s5); }
-  .fuera h3 { margin-bottom: var(--s2); }
-  .fuera ul { margin: 0; padding-left: 1.1em; color: var(--tinta-2); }
-  .cierre { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s6); align-items: center; }
-  .cierre img { width: 132px; height: auto; mix-blend-mode: multiply; }
-  .ley-nota { color: var(--tinta-2); font-size: var(--t-s); margin-top: var(--s4); max-width: 80ch; }
-  .pie-p { border-top: 1px solid var(--linea-f); padding-block: var(--s5); color: var(--tinta-2); font-size: var(--t-s); }
-  @media (max-width: 860px) {
-    .dos-c { grid-template-columns: minmax(0, 1fr); }
-    .planes { grid-template-columns: minmax(0, 1fr); }
-    .plan, .plan + .plan { padding: var(--s5) 0; border-left: 0; }
-    .plan + .plan { border-top: 1px solid var(--linea-f); }
-    .roles { columns: 1; }
-    .mod { grid-template-columns: minmax(0, 1fr); }
-    .cierre { grid-template-columns: minmax(0, 1fr); }
-  }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<script>document.documentElement.classList.add('js')</script>
+<script src="js/tema.js"></script>
+<link rel="stylesheet" href="css/propuesta.css">
 </head>
 <body>
-<header class="portada">
-  <div class="ancho">
-    <span class="eti">Propuesta para el Patronato Pro-Salud del Hospital Hilario Galindo · 6 de noviembre de 2026</span>
-    <h1>Cada unidad que entra al hospital, seguida hasta el paciente que la usó.</h1>
-    <p class="lead">Inventario, compras y ventas en un solo sistema. Lo usan al mismo tiempo la caja, la farmacia, la bodega y las salas, desde computadora, tablet o teléfono.</p>
-    <div class="acciones"><a class="btn claro" href="index.html">Abrir el demo</a><a class="btn linea" href="#inversion">Ver la inversión</a></div>
-    <div class="vitrina" id="vitrina"><div class="marco"><div class="pantalla"><iframe title="Vista del sistema" src="index.html?marco=1&u=u1" width="1280" height="640" tabindex="-1"></iframe></div></div></div>
-  </div>
+<header class="bar">
+  <a class="firma" href="#inicio"><img src="img/m-monterroso.png" alt="" width="36" height="29"><span><b>Monterroso Dev Studio</b><small>Sistemas a la medida</small></span></a>
+  <nav aria-label="Secciones"><a href="#viaje">Recorrido</a><a href="#demo">Pruébelo</a><a href="#hace">Qué hace</a><a href="#colores">Colores</a><a href="#inversion">Inversión</a></nav>
+  <a class="btn chico" href="#inversion">Tu plan</a>
 </header>
 
 <main>
-<section class="b primera"><div class="ancho dos-c">
-  <div><h2 class="tit">Pruébelo antes de decidir</h2><p>El demo trae dos meses de operación inventada: más de 18,000 cuentas y 76,000 cargos. Ningún dato es real.</p></div>
-  <ol class="pasos">
-    <li><div><b>Entre como Enfermería y pida algo a farmacia</b><span>Pruebe con morfina: el sistema exige receta y médico.</span></div></li>
-    <li><div><b>Entre como Farmacia y despache</b><span>Sale del lote que vence primero y se carga solo a la cuenta del paciente.</span></div></li>
-    <li><div><b>Entre como Caja y cobre</b><span>La factura separa lo exento de lo gravado, línea por línea.</span></div></li>
-    <li><div><b>Abra <a href="dispositivos.html">varios dispositivos a la vez</a></b><span>Simule la hora pico y vea a dos cajas pelear por la última unidad.</span></div></li>
-  </ol>
-</div></section>
-
-<section class="b"><div class="ancho dos-c">
-  <h2>Lo que hace</h2>
-  <div>
-    <div class="mod"><b>Cuenta del paciente</b><p>Admisión abre la cuenta. Consulta, farmacia, quirófano y encamamiento cargan a ella. Caja factura una sola vez.</p></div>
-    <div class="mod"><b>Farmacia</b><p>Pedidos de sala en vivo, venta de mostrador y control de psicotrópicos y estupefacientes con su balance mensual.</p></div>
-    <div class="mod"><b>Inventario</b><p>Seis bodegas, lote y vencimiento en cada unidad, kárdex con costo promedio, traslados con confirmación y conteo a ciegas desde el teléfono.</p></div>
-    <div class="mod"><b>Compras</b><p>Del pedido del área a la orden, la aprobación por monto, la recepción con lote, la retención y el pago.</p></div>
-    <div class="mod"><b>Trabajo social</b><p>Descuentos con estudio socioeconómico. La Junta sabe cuánta ayuda se dio cada mes y a cuántas personas.</p></div>
-    <div class="mod"><b>Contabilidad</b><p>Libros de compras y ventas, retenciones, inventario valorado, partida diaria, donaciones y compras con fondos públicos.</p></div>
+<section id="inicio" class="portada">
+  <div class="caja">
+    <p class="eti" data-r>Preparada para el Patronato Pro-Salud del Hospital Hilario Galindo</p>
+    <h1 id="titulo">Cada ampolla, <em>seguida</em> hasta el paciente que la recibió.</h1>
+    <p class="lead" data-r style="--i:7">Vender, cobrar y controlar el inventario en un solo paso. Lo usan al mismo tiempo la farmacia, la caja, la bodega y las salas, desde cualquier dispositivo.</p>
+    <div class="acc" data-r style="--i:9"><a class="btn" href="index.html">Abrir el demo</a><a class="btn suave" href="#viaje">Ver cómo funciona</a></div>
   </div>
-</div></section>
+  <svg class="pulso-h" id="pulsoH" viewBox="0 0 1200 220" preserveAspectRatio="none" aria-hidden="true"></svg>
+</section>
 
-<section class="b"><div class="ancho">
-  <h2 class="tit">Pensado para cientos de pacientes al día</h2>
-  <div class="tres">
-    <div><h3>Dos cajas, una unidad</h3><p>La base de datos bloquea la fila mientras se vende. Una caja gana y la otra recibe un aviso. No se vende lo que ya no hay ni se factura dos veces.</p></div>
-    <div><h3>Nada se borra</h3><p>El kárdex y la bitácora solo aceptan registros nuevos. Un error se corrige con otro movimiento, y queda quién, cuándo y desde qué dispositivo.</p></div>
-    <div><h3>Supabase Pro</h3><p>Postgres administrado con tablas particionadas por mes y 500 conexiones en vivo. Unos 2.8 millones de registros al año entran con holgura.</p></div>
-  </div>
-</div></section>
+<section class="frase" id="frase"><p>Una ampolla pasa por seis manos antes de llegar a un paciente. <em>El sistema la acompaña en todas.</em></p></section>
 
-<section class="b"><div class="ancho dos-c">
-  <div><h2 class="tit">Once roles</h2><p>Cada persona ve lo suyo, y nadie aprueba lo que pidió.</p></div>
-  <ul class="roles">
-    <li><b>Dirección</b><span>Ve todo y aprueba las compras grandes.</span></li>
-    <li><b>Admisión</b><span>Registra pacientes y abre cuentas.</span></li>
-    <li><b>Caja</b><span>Cobra, factura y cierra su turno.</span></li>
-    <li><b>Farmacia</b><span>Despacha y lleva el control de sustancias.</span></li>
-    <li><b>Enfermería</b><span>Pide a farmacia desde la tablet.</span></li>
-    <li><b>Quirófano</b><span>Registra el consumo de cada cirugía.</span></li>
-    <li><b>Bodega central</b><span>Recibe, traslada y cuenta.</span></li>
-    <li><b>Compras</b><span>Convierte solicitudes en órdenes.</span></li>
-    <li><b>Contabilidad</b><span>Libros, retenciones y pagos.</span></li>
-    <li><b>Trabajo social</b><span>Resuelve los descuentos.</span></li>
-    <li><b>Auditoría interna</b><span>Lee todo y no cambia nada.</span></li>
-  </ul>
-</div></section>
-
-<section class="b"><div class="ancho">
-  <h2 class="tit">Lo que la ley pide y cómo se resuelve</h2>
-  <p class="mudo" style="margin:12px 0 24px">Solo se marca «Definir» lo que depende de un criterio de la SAT o de una conexión que se hace al desarrollar.</p>
-  <div class="tabla-marco"><table class="t">
-    <thead><tr><th scope="col">Obligación</th><th scope="col">Norma</th><th scope="col">Cómo lo resuelve el sistema</th><th scope="col">Estado</th></tr></thead>
-    <tbody>
-      <tr><td class="prim">Libros de compras y ventas al día</td><td data-l="Norma">Decreto 27-92, Art. 37</td><td data-l="Sistema">Salen solos de cada factura y recepción</td><td data-l="Estado"><span class="et bien">En el demo</span></td></tr>
-      <tr><td class="prim">Valuación del inventario</td><td data-l="Norma">Decreto 10-2012, Art. 41</td><td data-l="Sistema">Promedio ponderado por producto, en cada movimiento</td><td data-l="Estado"><span class="et bien">En el demo</span></td></tr>
-      <tr><td class="prim">Renta exenta y renta gravada, separadas</td><td data-l="Norma">Decreto 10-2012, Art. 11 num. 1</td><td data-l="Sistema">Donaciones aparte de lo que se cobra por servicios</td><td data-l="Estado"><span class="et bien">En el demo</span></td></tr>
-      <tr><td class="prim">Retención de ISR a proveedores</td><td data-l="Norma">Decreto 10-2012, Arts. 47-48; Reglamento, Arts. 34-35</td><td data-l="Sistema">5 % y 7 % según régimen y monto, con constancia</td><td data-l="Estado"><span class="et bien">En el demo</span></td></tr>
-      <tr><td class="prim">Medicamentos genéricos exentos de IVA</td><td data-l="Norma">Decreto 27-92, Art. 7 num. 15</td><td data-l="Sistema">IVA calculado línea por línea en cada factura</td><td data-l="Estado"><span class="et bien">En el demo</span></td></tr>
-      <tr><td class="prim">Servicios de asistencia social</td><td data-l="Norma">Decreto 27-92, Art. 7 num. 13</td><td data-l="Sistema">Interruptor en configuración, según el criterio que aplique</td><td data-l="Estado"><span class="et ambar">Definir con SAT</span></td></tr>
-      <tr><td class="prim">Mermas y bajas con respaldo</td><td data-l="Norma">Decreto 10-2012, Art. 21 num. 17; Reglamento, Art. 14; Decreto 27-92, Art. 3 num. 7</td><td data-l="Sistema">Baja con acta y motivo. Marca los faltantes que generan IVA</td><td data-l="Estado"><span class="et bien">En el demo</span></td></tr>
-      <tr><td class="prim">Control de sustancias</td><td data-l="Norma">AG 712-99, Arts. 60 y 65; Decreto 48-92, Art. 3</td><td data-l="Sistema">Exige receta y arma el balance mensual, con paciente y prescriptor</td><td data-l="Estado"><span class="et bien">En el demo</span></td></tr>
-      <tr><td class="prim">Compras con fondos públicos</td><td data-l="Norma">Decreto 57-92, Arts. 1 y 54; Decreto 31-2002, Art. 2</td><td data-l="Sistema">Fondo separado por lote y orden, con registro del NOG de Guatecompras</td><td data-l="Estado"><span class="et bien">En el demo</span></td></tr>
-      <tr><td class="prim">Conservar libros y documentos</td><td data-l="Norma">Código de Comercio, Arts. 376 y 382; Código Tributario, Art. 112</td><td data-l="Sistema">Nada se borra. Exportación mensual fuera de la base</td><td data-l="Estado"><span class="et pino">Al desarrollar</span></td></tr>
-      <tr><td class="prim">Factura electrónica en línea</td><td data-l="Norma">Acuerdo de Directorio SAT 13-2018</td><td data-l="Sistema">En el demo es simulada. Se conecta al certificador que el Patronato contrate</td><td data-l="Estado"><span class="et pino">Al desarrollar</span></td></tr>
-    </tbody>
-  </table></div>
-  <p class="ley-nota">Antes de implementar se confirman las reformas vigentes y el trato de IVA de las medicinas no genéricas con la SAT y el asesor del Patronato.</p>
-</div></section>
-
-<section class="b precios" id="inversion"><div class="ancho">
-  <h2 class="tit">Inversión</h2>
-  <p class="mudo" style="margin-top:12px;max-width:62ch">El precio cubre el desarrollo personalizado después de validar el demo. Elija la forma que mejor le quede al Patronato.</p>
-  <div class="iva"><div class="chips" role="group" aria-label="Mostrar precios"><button class="chip" id="sin" aria-pressed="true">Sin IVA</button><button class="chip" id="con" aria-pressed="false">Con IVA</button></div></div>
-  <div class="planes">
-    <div class="plan">
-      <h3>Pago mensual</h3><p class="para">Menos desembolso al inicio. Hospedaje y soporte incluidos.</p>
-      <div class="monto"><span>Implementación, una sola vez</span><b data-q="mensual.implementacion"></b></div>
-      <div class="monto sec"><span>Cada mes</span><b data-q="mensual.cuota"></b></div>
-      <ul id="l-mensual"></ul>
+<section id="viaje" class="viaje" aria-label="Recorrido de una ampolla">
+  <div class="escena">
+    <div class="pista">
+      <svg id="ruta" viewBox="0 0 1200 240" aria-hidden="true">
+        <defs><clipPath id="corte"><rect id="corteR" x="0" y="0" width="0" height="240"/></clipPath></defs>
+        <path id="lineaB" class="linea-b"/><path id="lineaA" class="linea-a" clip-path="url(#corte)"/>
+        <g id="nodos"></g>
+        <g id="ficha">
+          <g id="f-vial" class="fig"><path class="vidrio" d="M-5 -46h10v10c0 4 7 6 7 13v38c0 4-3 7-7 7h-10c-4 0-7-3-7-7v-38c0-7 7-9 7-13z"/><g id="liq"><path class="liquido" d="M-10 -8h20v23c0 3-2 5-5 5h-10c-3 0-5-2-5-5z"/></g></g>
+          <g id="f-recibo" class="fig"><path class="papel" d="M-17 -40h34v62l-6-5-5 5-6-5-6 5-5-5-6 5z"/><path class="rayas" d="M-10 -28h20M-10 -18h20M-10 -8h12"/></g>
+          <g id="f-libro" class="fig"><path class="papel" d="M-22 -36h20c2 0 2 2 2 2s0-2 2-2h20v50h-20c-2 0-2 2-2 2s0-2-2-2h-20z"/><path class="rayas" d="M0 -32v46M-16 -24h10M-16 -14h10M6 -24h10M6 -14h10"/></g>
+        </g>
+      </svg>
     </div>
-    <div class="plan">
-      <h3>Compra única</h3><p class="para">Un pago, y el sistema queda en la cuenta del Patronato.</p>
-      <div class="monto"><span>Pago único</span><b data-q="compra.pago"></b></div>
-      <div class="monto sec"><span>Soporte cada mes</span><b data-q="compra.soporte"></b></div>
-      <ul id="l-compra"></ul>
+    <div class="etapas" id="etapas">
+      <article class="etapa"><div class="txt"><span class="paso-n">1 de 6</span><h2>Compras la pide</h2><p>La orden nace de lo que está por agotarse. Si pasa del monto límite, Dirección la aprueba desde su teléfono.</p></div>
+        <div class="pant"><header>Orden de compra <span>OC-000046</span></header><div class="fl"><span>Ceftriaxona 1 g</span><b>200 viales</b></div><div class="fl"><span>Droguería Costa Sur</span><b>Q 2,960.00</b></div><div class="fl"><span>Fondo</span><b>Propio</b></div><span class="sello">Aprobada</span></div></article>
+      <article class="etapa"><div class="txt"><span class="paso-n">2 de 6</span><h2>Bodega la recibe</h2><p>Queda con lote, vencimiento y costo. Si viene vencida, no entra.</p></div>
+        <div class="pant"><header>Recepción <span>Bodega central</span></header><div class="fl"><span>Lote</span><b>L48213</b></div><div class="fl"><span>Vence</span><b>12 mar 2028</b></div><div class="gran"><span>Existencia</span><b data-de="40" data-a="240">40</b></div></div></article>
+      <article class="etapa"><div class="txt"><span class="paso-n">3 de 6</span><h2>Farmacia la entrega</h2><p>La enfermera la pide desde la tablet. El sistema elige solo el lote que vence primero.</p></div>
+        <div class="pant"><header>Pedido urgente <span>Cama 12</span></header><div class="lote elegido"><i></i><span>L31907</span><b>vence en 62 días</b></div><div class="lote"><i></i><span>L48213</span><b>vence 12 mar 2028</b></div><div class="gran"><span>Queda en farmacia</span><b data-de="86" data-a="85">86</b></div></div></article>
+      <article class="etapa"><div class="txt"><span class="paso-n">4 de 6</span><h2>Llega al paciente</h2><p>Se carga sola a su cuenta. Nadie la anota dos veces y nadie se la olvida.</p></div>
+        <div class="pant"><header>Cuenta del paciente <span>María Tzoc</span></header><div class="fl n1"><span>Atención de emergencia</span><b>Q 200.00</b></div><div class="fl n2"><span>Ceftriaxona 1 g</span><b>Q 45.00</b></div><div class="gran"><span>Total</span><b data-de="200" data-a="245" data-q="1">Q 200.00</b></div></div></article>
+      <article class="etapa"><div class="txt"><span class="paso-n">5 de 6</span><h2>Se cobra una sola vez</h2><p>Ya no es una ampolla: es dinero. La venta separa lo exento de lo gravado, y la factura con certificador es opcional.</p></div>
+        <div class="pant"><header>Cobro <span>Caja 1</span></header><div class="fl"><span>Exento</span><b>Q 45.00</b></div><div class="fl"><span>Gravado</span><b>Q 178.57</b></div><div class="fl"><span>IVA 12 %</span><b>Q 21.43</b></div><div class="gran"><span>Total</span><b>Q 245.00</b></div><span class="sello">Cobrado</span></div></article>
+      <article class="etapa"><div class="txt"><span class="paso-n">6 de 6</span><h2>Queda en los libros</h2><p>Sin digitar nada otra vez. Y si mañana hay una alerta sanitaria, se sabe qué pacientes la recibieron.</p></div>
+        <div class="pant"><header>Sin copiar a mano <span>Hoy</span></header><div class="ck n1"><i></i>Kárdex con costo promedio</div><div class="ck n2"><i></i>Libro de ventas</div><div class="ck n3"><i></i>Partida del día</div><div class="ck n4"><i></i>Bitácora: quién, cuándo y desde dónde</div></div></article>
+    </div>
+    <p class="ejemplo">Datos de ejemplo</p>
+  </div>
+</section>
+
+<section id="demo" class="seccion tinte">
+  <div class="caja">
+    <header class="cab" data-r><span class="n">01</span><div><p class="eti">Pruébelo</p><h2>Todo el hospital, <em>al mismo tiempo</em></h2></div></header>
+    <p class="intro" data-r>Esto no es un video. Son tres sesiones del sistema con dos meses de operación inventada: más de 18,000 cuentas. Simule la hora pico y véalas moverse.</p>
+    <div class="control" data-r><button class="btn" id="simular">Simular hora pico</button><span class="vivo"><i></i><b id="nOps">0</b> operaciones</span></div>
+    <div class="aparatos" id="aparatos">
+      <figure class="mac" data-r data-w="1280" data-h="800"><div class="pant-f"><iframe title="Farmacia en computadora" data-src="index.html?marco=1&u=u5#/farmacia" tabindex="-1"></iframe></div><figcaption>Farmacia en el mostrador</figcaption></figure>
+      <figure class="tab" data-r style="--i:2" data-w="820" data-h="1040"><div class="pant-f"><iframe title="Mapa en tablet" data-src="index.html?marco=1&u=u1#/mapa" tabindex="-1"></iframe></div><figcaption>Dirección en la tablet</figcaption></figure>
+      <figure class="tel" data-r style="--i:4" data-w="390" data-h="800"><div class="pant-f"><iframe title="Bodega en teléfono" data-src="index.html?marco=1&u=u8#/inventario" tabindex="-1"></iframe></div><figcaption>Bodega en el teléfono</figcaption></figure>
     </div>
   </div>
-  <p class="cinco" id="cinco"></p>
-  <div class="fuera"><h3>No incluye, en ninguna de las dos formas</h3><ul><li>El costo del certificador de factura electrónica, que el Patronato contrata directo.</li><li>Computadoras, tablets, teléfonos, lectores de código e impresoras.</li><li>Internet del hospital.</li></ul></div>
-</div></section>
+</section>
 
-<section class="b"><div class="ancho dos-c">
-  <div><h2 class="tit">Cómo seguimos</h2><p>Unas 13 semanas, a confirmar después del levantamiento.</p></div>
-  <ol class="pasos">
-    <li><div><b>Revisión del demo</b><span>Lo recorren las áreas y dicen qué falta, qué sobra y qué se hace distinto.</span></div></li>
-    <li><div><b>Levantamiento, 2 semanas</b><span>Procesos reales, catálogos, roles, precios y criterios fiscales.</span></div></li>
-    <li><div><b>Desarrollo, 8 semanas</b><span>Primero inventario y compras. Después cuenta del paciente, caja y factura electrónica.</span></div></li>
-    <li><div><b>Arranque, 3 semanas</b><span>Carga de saldos iniciales, capacitación por rol y operación en paralelo antes de soltar lo anterior.</span></div></li>
-  </ol>
-</div></section>
+<section id="hace" class="seccion">
+  <div class="caja dos">
+    <header class="cab" data-r><span class="n">02</span><div><p class="eti">Qué hace</p><h2>Hecho para <em>su</em> operación</h2></div></header>
+    <div class="mods" id="mods" data-r></div>
+  </div>
+</section>
 
-<section class="b"><div class="ancho cierre">
-  <div><h2 class="tit">¿Lo vemos juntos?</h2><p class="mudo" style="margin:12px 0 24px;max-width:52ch">Antonio Monterroso, Monterroso Dev Studio. Le acompaño a recorrer el demo con la Junta y con las áreas.</p>
-  <a class="btn pri" style="min-height:48px;padding-inline:20px" href="https://wa.me/50237645139?text=Hola%20Antonio%2C%20revisamos%20la%20propuesta%20del%20sistema%20para%20el%20Hospital%20Hilario%20Galindo." rel="noopener">Escribir por WhatsApp · 3764 5139</a></div>
-  <img src="img/m-monterroso.png" alt="Logo de Monterroso Dev Studio" width="132" height="106">
-</div></section>
+<section id="roles" class="seccion tinte">
+  <div class="caja">
+    <header class="cab" data-r><span class="n">03</span><div><p class="eti">Quién lo usa</p><h2>Once roles, <em>una sola verdad</em></h2></div></header>
+    <div class="roles" data-r><div class="chips" id="chips" role="tablist" aria-label="Roles"></div><div class="rol" id="rol" role="tabpanel" aria-live="polite"></div></div>
+  </div>
+</section>
+
+<section id="ley" class="seccion">
+  <div class="caja dos">
+    <header class="cab" data-r><span class="n">04</span><div><p class="eti">Según ley</p><h2>Lo que la ley pide, <em>ya resuelto</em></h2></div></header>
+    <div>
+      <ul class="puntos">
+        <li data-r><b>Libros de compras y ventas</b>Salen solos de cada venta y recepción.</li>
+        <li data-r style="--i:1"><b>IVA línea por línea</b>Los genéricos inscritos van exentos dentro de la misma venta.</li>
+        <li data-r style="--i:2"><b>Retención de ISR</b>5 % y 7 % según régimen y monto, con su constancia.</li>
+        <li data-r style="--i:3"><b>Medicamentos controlados</b>Exige receta y arma el balance mensual con paciente y prescriptor.</li>
+        <li data-r style="--i:4"><b>Fondos públicos y donaciones</b>Separados por lote y por orden, con NOG de Guatecompras.</li>
+      </ul>
+      <button class="btn suave" id="verLey" data-r>Ver el detalle legal</button>
+    </div>
+  </div>
+</section>
+
+<section id="colores" class="seccion tinte">
+  <div class="caja dos">
+    <header class="cab" data-r><span class="n">05</span><div><p class="eti">Personalización</p><h2>Con <em>sus</em> colores</h2></div></header>
+    <div data-r>
+      <p class="intro" style="margin-top:0">Elija un tono. Cambia esta página y también el sistema.</p>
+      <div class="tonos" id="tonos"></div>
+      <label class="gusto" for="hue">A su gusto<input id="hue" type="range" min="0" max="359" step="1"></label>
+    </div>
+  </div>
+</section>
+
+<section id="inversion" class="seccion">
+  <div class="caja">
+    <header class="cab" data-r><span class="n">06</span><div><p class="eti">Inversión</p><h2>Dos formas de <em>tenerlo</em></h2></div></header>
+    <div class="plan" data-r>
+      <div class="plan-sel">
+        <div class="seg" role="group" aria-label="Forma de pago"><i id="pill"></i><button id="sMen" aria-pressed="true">Pago mensual</button><button id="sCom" aria-pressed="false">Compra única</button></div>
+        <label class="iva"><input type="checkbox" id="iva"><span></span>Con IVA</label>
+      </div>
+      <div class="plan-num">
+        <div><span id="e1"></span><b id="m1" class="num"></b></div>
+        <div class="mas" aria-hidden="true">+</div>
+        <div><span id="e2"></span><b id="m2" class="num"></b></div>
+      </div>
+      <p class="nota-p" id="pPara"></p>
+      <ul class="incl" id="incl"></ul>
+      <p class="nota-p" id="cinco"></p>
+    </div>
+    <div class="fuera" data-r>
+      <h3>Aparte, en las dos formas</h3>
+      <ul>
+        <li><b>Equipo:</b> computadoras, tablets, teléfonos, lectores de código e impresoras. <span class="opc">Opcional</span> Si lo desean, también se los vendemos.</li>
+        <li><b>Certificador de factura:</b> solo si deciden usarlo. El Patronato lo contrata directo. <span class="opc">Opcional</span></li>
+        <li><b>Internet del hospital.</b></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="pasos" class="seccion tinte">
+  <div class="caja dos">
+    <header class="cab" data-r><span class="n">07</span><div><p class="eti">Cómo seguimos</p><h2>Unas <em>13 semanas</em></h2><p class="intro" style="font-size:1rem">A confirmar después del levantamiento.</p></div></header>
+    <ol class="tiempo" id="tiempo">
+      <li data-r><b>Revisión del demo</b>Las áreas lo recorren y dicen qué falta y qué se hace distinto.</li>
+      <li data-r><b>Levantamiento · 2 semanas</b>Procesos reales, catálogos, roles, precios y criterios fiscales.</li>
+      <li data-r><b>Desarrollo · 8 semanas</b>Primero farmacia e inventario. Después compras, cuenta del paciente y caja.</li>
+      <li data-r><b>Arranque · 3 semanas</b>Saldos iniciales, capacitación por rol y operación en paralelo.</li>
+    </ol>
+  </div>
+</section>
+
+<section class="cierre">
+  <div class="caja">
+    <h2 data-r>Empecemos.</h2>
+    <p data-r style="--i:1">Antonio Monterroso, Monterroso Dev Studio. Le acompaño a recorrer el demo con la Junta y con las áreas.</p>
+    <a class="btn" data-r style="--i:2" href="https://wa.me/50237645139?text=Hola%20Antonio%2C%20revisamos%20la%20propuesta%20del%20sistema%20para%20el%20Hospital%20Hilario%20Galindo." rel="noopener">Escribir por WhatsApp · 3764 5139</a>
+  </div>
+</section>
 </main>
-<footer class="pie-p"><div class="ancho">Montos en quetzales. El demo usa datos de ejemplo y sus documentos no tienen validez fiscal.</div></footer>
+<footer class="pie"><div class="caja">Propuesta del 6 de noviembre de 2026. Montos en quetzales. El demo usa datos de ejemplo y sus documentos no tienen validez fiscal.</div></footer>
 
-<script src="js/iconos.js"></script>
-<script>
-/* Cambie aquí los precios: todo lo demás se recalcula solo. */
-const PRECIOS = {
-  mensual: { implementacion: 18000, cuota: 4500 },
-  compra: { pago: 145000, soporte: 1800 },
-  ivaPct: 12,
-  anios: 5,
-  infraUSD: 75, // Supabase Pro + cómputo Medium, que en compra única paga el Patronato
-};
-const INCLUYE = {
-  mensual: ['Levantamiento y personalización', 'Carga de catálogos y saldos iniciales', 'Capacitación por rol', 'Base de datos Supabase Pro y respaldos', 'Soporte y mejoras menores'],
-  compra: ['Levantamiento y personalización', 'Carga de catálogos y saldos iniciales', 'Capacitación por rol', 'Soporte y mejoras menores', `Supabase a nombre del Patronato: desde USD ${PRECIOS.infraUSD} al mes, pagados directo`],
-};
-const fmt = n => 'Q ' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const chk = `<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONOS.check}</svg>`;
-for (const k of ['mensual', 'compra']) document.getElementById('l-' + k).innerHTML = INCLUYE[k].map(t => `<li>${chk}<span>${t}</span></li>`).join('');
-function pintar(conIva) {
-  const f = conIva ? 1 + PRECIOS.ivaPct / 100 : 1;
-  document.querySelectorAll('[data-q]').forEach(el => { const [a, b] = el.dataset.q.split('.'); el.textContent = fmt(PRECIOS[a][b] * f); });
-  const m = PRECIOS.anios * 12;
-  const tM = (PRECIOS.mensual.implementacion + PRECIOS.mensual.cuota * m) * f, tC = (PRECIOS.compra.pago + PRECIOS.compra.soporte * m) * f;
-  document.getElementById('cinco').textContent = `A ${PRECIOS.anios} años, el pago mensual suma ${fmt(tM)} con la base de datos incluida. La compra única suma ${fmt(tC)}, más la base de datos que el Patronato paga directo.`;
-  document.getElementById('sin').setAttribute('aria-pressed', !conIva); document.getElementById('con').setAttribute('aria-pressed', conIva);
-}
-document.getElementById('sin').onclick = () => pintar(false);
-document.getElementById('con').onclick = () => pintar(true);
-pintar(false);
-const v = document.getElementById('vitrina'), fr = v.querySelector('iframe'), pa = v.querySelector('.pantalla');
-const ajustar = () => { const k = pa.clientWidth / 1280; fr.style.transform = `scale(${k})`; pa.style.height = 640 * k + 'px'; };
-new ResizeObserver(ajustar).observe(pa); ajustar();
-</script>
+<dialog id="detalle" aria-label="Detalle legal">
+  <header><h2>Detalle legal</h2><button class="x" id="cerrarLey" aria-label="Cerrar">×</button></header>
+  <div class="ley-t">
+    <div class="r"><b>Libros de compras y ventas</b><span>Decreto 27-92, Art. 37</span><i class="ok">En el demo</i></div>
+    <div class="r"><b>Valuación del inventario, promedio ponderado</b><span>Decreto 10-2012, Art. 41</span><i class="ok">En el demo</i></div>
+    <div class="r"><b>Renta exenta y gravada separadas</b><span>Decreto 10-2012, Art. 11 num. 1</span><i class="ok">En el demo</i></div>
+    <div class="r"><b>Retención de ISR a proveedores</b><span>Decreto 10-2012, Arts. 47-48; Reglamento, Arts. 34-35</span><i class="ok">En el demo</i></div>
+    <div class="r"><b>Genéricos exentos de IVA</b><span>Decreto 27-92, Art. 7 num. 15</span><i class="ok">En el demo</i></div>
+    <div class="r"><b>Servicios de asistencia social</b><span>Decreto 27-92, Art. 7 num. 13</span><i class="def">Definir con SAT</i></div>
+    <div class="r"><b>Mermas y bajas con respaldo</b><span>Decreto 10-2012, Art. 21 num. 17; Reglamento, Art. 14; Decreto 27-92, Art. 3 num. 7</span><i class="ok">En el demo</i></div>
+    <div class="r"><b>Control de sustancias</b><span>AG 712-99, Arts. 60 y 65; Decreto 48-92, Art. 3</span><i class="ok">En el demo</i></div>
+    <div class="r"><b>Compras con fondos públicos</b><span>Decreto 57-92, Arts. 1 y 54; Decreto 31-2002, Art. 2</span><i class="ok">En el demo</i></div>
+    <div class="r"><b>Conservar libros y documentos</b><span>Código de Comercio, Arts. 376 y 382; Código Tributario, Art. 112</span><i class="des">Al desarrollar</i></div>
+    <div class="r"><b>Factura electrónica</b><span>Acuerdo de Directorio SAT 13-2018. Sin certificador, la factura se hace en la Agencia Virtual y se anota en la venta</span><i class="des">Opcional</i></div>
+  </div>
+  <p>Antes de implementar se confirman las reformas vigentes y el trato de IVA de las medicinas no genéricas con la SAT y el asesor del Patronato.</p>
+</dialog>
+<script src="js/propuesta.js"></script>
 </body>
 </html>

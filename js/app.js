@@ -7,7 +7,7 @@
   A.enMarco = params.get('marco') === '1';
 
   A.MENU = {
-    inicio: ['Inicio', 'house'], admision: ['Admisión', 'user-round'], cuentas: ['Cuentas', 'receipt'], caja: ['Caja', 'wallet'], farmacia: ['Farmacia', 'pill'], sala: ['Sala', 'stethoscope'],
+    inicio: ['Inicio', 'house'], mapa: ['Mapa del hospital', 'map'], admision: ['Admisión', 'user-round'], cuentas: ['Cuentas', 'receipt'], caja: ['Caja', 'wallet'], farmacia: ['Farmacia', 'pill'], sala: ['Sala', 'stethoscope'],
     inventario: ['Inventario', 'boxes'], compras: ['Compras', 'shopping-cart'], social: ['Trabajo social', 'heart-handshake'], ley: ['Contabilidad y ley', 'book-open-check'], reportes: ['Reportes', 'chart-column'], bitacora: ['Bitácora', 'scroll-text'], usuarios: ['Usuarios', 'users'], config: ['Configuración', 'settings'],
   };
   A.rol = () => C.ROLES[M.sesion.rol];
@@ -64,7 +64,7 @@
   function pintarMarco() {
     const u = M.sesion, rol = A.rol();
     const banda = A.enMarco ? '' : `<div class="banda"><span>Demostración · datos de ejemplo · documentos sin validez fiscal</span><span class="acciones solo-grande"><a href="#/dispositivos">Ver varios dispositivos a la vez</a><a href="propuesta.html">Propuesta y precios</a></span></div>`;
-    document.getElementById('raiz').innerHTML = `${banda}<div class="app"><aside class="lateral"><div class="marca"><b>Hilario Galindo</b><span>Patronato Pro-Salud</span></div><nav class="menu" id="menu" aria-label="Principal"></nav>
+    document.getElementById('raiz').innerHTML = `${banda}<div class="app"><aside class="lateral"><div class="marca"><svg class="cruz" viewBox="0 0 32 32" aria-hidden="true"><path d="M12 5h8v7h7v8h-7v7h-8v-7H5v-8h7z"/></svg><b>Hilario Galindo</b><span>Patronato Pro-Salud</span></div><nav class="menu" id="menu" aria-label="Principal"></nav>
       <div class="quien"><b>${e(u.nombre)}</b><span>${e(rol.nombre)}</span><button data-a="salir">${U.ic('log-out')}<span>Cambiar de rol</span></button></div></aside>
       <div class="central"><header class="tope"><div class="ruta" id="ruta"></div>
         <div class="buscar-global">${U.ic('search')}<input type="search" id="global" placeholder="Paciente, producto, cuenta, factura" aria-label="Buscar en todo el sistema"></div>

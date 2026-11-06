@@ -19,7 +19,7 @@
 
   /* ---------- inventario ---------- */
   A.vistas.inventario = {
-    ruta: p => ({ existencias: 'Existencias', vencimientos: 'Vencimientos', kardex: 'Kárdex', traslados: 'Traslados', ajustes: 'Ajustes y bajas', conteo: 'Conteo físico' }[(p[1] || 'existencias').split('?')[0]]),
+    ruta: p => ({ existencias: 'Existencias', vencimientos: 'Vencimientos', kardex: 'Kárdex', traslados: 'Traslados', ajustes: 'Ajustes y bajas', conteo: 'Conteo físico', rastreo: 'Rastreo de lote' }[(p[1] || 'existencias').split('?')[0]]),
     html(st, p) {
       const tab = (p[1] || 'existencias').split('?')[0]; const d = db();
       if ((p[1] || '').includes('?bajo')) st.fb = 'bajo';
@@ -27,8 +27,8 @@
       const nVenc = d.lotes.filter(l => l.vence < hoy + 30 * M.DIA && Object.values(l.ex).some(n => n > 0)).length;
       const nTr = d.traslados.filter(t => t.estado === 'solicitado' || t.estado === 'en camino').length;
       const nAj = d.ajustes.filter(a => a.estado === 'pendiente').length;
-      const tabs = U.tabs([{ id: 'existencias', t: 'Existencias' }, { id: 'vencimientos', t: 'Vencimientos', n: nVenc }, { id: 'kardex', t: 'Kárdex' }, { id: 'traslados', t: 'Traslados', n: nTr }, { id: 'ajustes', t: 'Ajustes y bajas', n: nAj }, { id: 'conteo', t: 'Conteo físico' }], tab, 'inventario');
-      return ({ existencias, vencimientos, kardex, traslados, ajustes, conteo }[tab])(st, tabs);
+      const tabs = U.tabs([{ id: 'existencias', t: 'Existencias' }, { id: 'vencimientos', t: 'Vencimientos', n: nVenc }, { id: 'kardex', t: 'Kárdex' }, { id: 'rastreo', t: 'Rastreo de lote' }, { id: 'traslados', t: 'Traslados', n: nTr }, { id: 'ajustes', t: 'Ajustes y bajas', n: nAj }, { id: 'conteo', t: 'Conteo físico' }], tab, 'inventario');
+      return ({ existencias, vencimientos, kardex, traslados, ajustes, conteo, rastreo: A.rastreo }[tab])(st, tabs);
     },
     acc: {
       fb(id) { A.st.inventario.fb = id; A.st.inventario.pag_t = 0; A.repintar(); },
@@ -48,6 +48,7 @@
       kexp() { const id = A.st.inventario.kp; const p = db().ix.prod.get(id); U.csv('kardex-' + p.cod, [['Fecha', 'Movimiento', 'Documento', 'Bodega', 'Cantidad', 'Saldo', 'Costo', 'Valor'], ...(db().ix.movsDe.get(id) || []).map(m => [U.fh(m.f), m.t, m.d, m.b, m.c, m.s, m.u, m.v])]); },
     },
     despues(el, st) {
+      A.rastreoListo(el, st);
       const s = el.querySelector('#kselect'); if (!s) return;
       U.selector(s, { ph: 'Buscar producto', valor: st.kp ? db().ix.prod.get(st.kp).nombre : '', limpiar: false, buscar: q => db().productos.filter(p => (p._n || (p._n = U.norm(p.nombre + ' ' + p.cod))).includes(q)).map(p => ({ txt: p.nombre, sub: p.cod, id: p.id })), alElegir(x) { st.kp = x.id; st.pag_k = 0; A.repintar(); } });
     },
@@ -76,7 +77,7 @@
     const valor = filas.reduce((a, l) => a + Object.values(l.ex).reduce((x, y) => x + y, 0) * l.costo, 0);
     return `${A.cab('Inventario', `${U.n(filas.length)} lotes en riesgo por ${Q(valor)}. Lo vencido ya no se despacha ni se traslada.`, A.puede('inv.baja') ? `<button class="btn pri" data-a="baja">Dar de baja</button>` : '')}${tabs}
       <div class="filtros">${U.chips([['alerta', `Próximos ${d.cfg.diasVence} días`], ['vencido', 'Vencidos']], f, 'fvc')}</div>
-      ${U.tabla({ filas, pag: st.pag_t, clic: 'lp', id: l => l.prod, vacioT: 'Sin lotes en riesgo', cols: [{ t: 'Producto', h: l => `${e(d.ix.prod.get(l.prod).nombre)}<span class="t-sub">Lote ${e(l.num)} · ${e(l.fondo)}</span>` }, { t: 'Vence', h: l => A.etVence(l.vence) }, { t: 'Dónde', h: l => Object.entries(l.ex).filter(([, n]) => n > 0).map(([b, n]) => `${e(M.nomBod(d, b))} ${U.n(n)}`).join(', ') }, { t: 'Valor', der: 1, h: l => Q(Object.values(l.ex).reduce((x, y) => x + y, 0) * l.costo) }, { t: '', der: 1, h: l => l.vence < hoy && A.puede('inv.baja') ? `<button class="btn chico" data-a="bajaLote" data-id="${l.id}">Baja</button>` : '' }] })}`;
+      ${U.tabla({ filas, pag: st.pag_t, clic: 'lp', id: l => l.prod, vacioT: 'Sin lotes en riesgo', cols: [{ t: 'Producto', h: l => `${e(d.ix.prod.get(l.prod).nombre)}${l.bloqueo ? ' ' + U.et('Bloqueado', 'alerta') : ''}<span class="t-sub">Lote ${e(l.num)} · ${e(l.fondo)}</span>` }, { t: 'Vence', h: l => A.etVence(l.vence) }, { t: 'Dónde', h: l => Object.entries(l.ex).filter(([, n]) => n > 0).map(([b, n]) => `${e(M.nomBod(d, b))} ${U.n(n)}`).join(', ') }, { t: 'Valor', der: 1, h: l => Q(Object.values(l.ex).reduce((x, y) => x + y, 0) * l.costo) }, { t: '', der: 1, h: l => l.vence < hoy && A.puede('inv.baja') ? `<button class="btn chico" data-a="bajaLote" data-id="${l.id}">Baja</button>` : '' }] })}`;
   }
   A.vistas.inventario.acc.fvc = id => { A.st.inventario.fv = id; A.repintar(); };
   A.vistas.inventario.acc.lp = id => A.fichaProducto(id);
