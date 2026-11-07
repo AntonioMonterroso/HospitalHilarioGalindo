@@ -64,6 +64,51 @@
   };
   /* Tamaño de cada dibujo para que quepa y quede centrado */
   const CAJA = { em: [-120, -80, 240, 215], ad: [-100, -62, 210, 190], ce: [-90, -86, 190, 210], lb: [-85, -74, 175, 170], fx: [-90, -66, 190, 165], bc: [-110, -62, 240, 180], qx: [-105, -82, 215, 195], en: [-90, -120, 220, 240], of: [-70, -90, 150, 190], pa: [-90, -120, 220, 240] };
+  /* Niveles de seguridad, y qué protege cada área */
+  D.NIVELES = [
+    ['Entrada', 'Cada persona entra con su propia cuenta. Se activa con contraseña segura y doble verificación.', 'Al implementar'],
+    ['Permisos por puesto', 'Cada puesto ve y hace solo lo suyo. Al implementar, la base de datos también lo hace cumplir.', 'En el demo'],
+    ['Reglas que no se saltan', 'Nadie aprueba lo suyo, no se vende lo vencido ni lo que no hay, y los controlados exigen receta.', 'En el demo'],
+    ['Bitácora sin borrar', 'Queda quién, cuándo y desde qué dispositivo. Lo rechazado también se registra.', 'En el demo'],
+    ['Datos protegidos', 'Conexión cifrada, información cifrada en el servidor y respaldos diarios.', 'Al implementar'],
+  ];
+  D.SEG = {
+    fx: ['Máxima', ['Controlados solo con receta y médico', 'Lo vencido o bloqueado no se vende', 'Caja propia con arqueo a ciegas', 'Cada venta queda con puesto y hora']],
+    bc: ['Máxima', ['Solo Bodega ingresa mercadería', 'Conteo a ciegas: quien cuenta no ve el sistema', 'Ajustes con aprobación de otra persona', 'Una factura no entra dos veces']],
+    ad: ['Alta', ['Cada cajero responde por su turno', 'Una cuenta no se cobra dos veces', 'Arqueo a ciegas al cerrar', 'Un DPI no se repite en dos expedientes']],
+    em: ['Alta', ['Datos del paciente solo para quien lo atiende', 'Cada cargo queda con quién lo hizo', 'Controlados exigen receta']],
+    ce: ['Estándar', ['Datos del paciente por puesto', 'Cada cargo queda en la bitácora']],
+    lb: ['Estándar', ['Reactivos con lote y vencimiento', 'Datos del paciente por puesto']],
+    qx: ['Máxima', ['Consumo registrado por cirugía', 'Anestésicos controlados con receta', 'Lo vencido no sale de bodega']],
+    en: ['Alta', ['Pedidos con puesto y hora', 'Medicina ligada a la cuenta del paciente', 'Devoluciones regresan a su lote']],
+  };
+
+  /* Piezas para los interiores */
+  Object.assign(D, { P, caja, pol, qa, qb, col });
+  D.centro = id => { const c = SITIO.find(x => x[0] === id); return P(c[1] + 44, c[2] + 36, 20); };
+  const UNIF = { direccion: 'oklch(32% .02 250)', admision: 'oklch(52% .09 300)', caja: 'oklch(42% .1 245)', farmacia: 'oklch(95% .006 250)', enfermeria: 'oklch(56% .08 200)', quirofano: 'oklch(52% .07 165)', bodega: 'oklch(66% .15 55)', compras: 'oklch(90% .03 85)', contabilidad: 'oklch(92% .01 275)', social: 'oklch(62% .08 350)', auditoria: 'oklch(52% .012 250)', paciente: 'oklch(82% .03 235)', seguridad: 'oklch(30% .05 255)' };
+  /* Figura de cuerpo entero, de pie, sin rostro ni manos */
+  D.mini = function (rol, i = 0) {
+    const a = AV[rol], piel = PIEL[a ? a[0] : 'abc'[i % 3]], u = UNIF[rol] || UNIF.paciente;
+    const pelo = [PELO.n, PELO.c, PELO.g][i % 3];
+    const gorro = rol === 'seguridad' ? `<path d="M-6 -29a6 6 0 0 1 12 0z" fill="oklch(26% .05 255)"/><path d="M-7.500 -29.500h15v1.800h-15z" fill="oklch(20% .04 255)"/>` : rol === 'quirofano' ? `<path d="M-5.500 -29a5.500 5.500 0 0 1 11 0z" fill="oklch(46% .08 165)"/>` : rol === 'bodega' ? `<path d="M-6 -29a6 6 0 0 1 12 0zM-7.500 -29.800h15v1.600h-15z" fill="oklch(80% .13 90)"/>` : `<path d="M-5.500 -28.500a5.500 5.500 0 0 1 11 0c-2-1.500-9-1.500-11 0z" fill="${pelo}"/>`;
+    return `<ellipse cx="0" cy="0" rx="8" ry="4" fill="oklch(30% .02 250 / .2)"/><rect x="-4.500" y="-9" width="3.800" height="9" rx="1.500" fill="oklch(30% .02 250)"/><rect x=".7" y="-9" width="3.800" height="9" rx="1.500" fill="oklch(30% .02 250)"/><path d="M-6.500 -8v-9c0-3 2.500-5 6.500-5s6.500 2 6.500 5v9z" fill="${u}" stroke="oklch(30% .02 250 / .22)" stroke-width=".6"/><circle cx="0" cy="-27.500" r="5.400" fill="${piel}"/>${gorro}`;
+  };
+  function estante(x, y, w, hue) { let s = caja(x, y, 0, w, 9, 30, { hue: 60, l: 78, c: .03 }); [7, 15, 23].forEach((z, k) => { for (let i = 0; i * 9 + 3 < w - 4; i++) s += qa(x + i * 9 + 3, x + i * 9 + 8, z, z + 6, y + 9, col((hue + i * 40 + k * 25) % 360, 66, .08)); }); return s; }
+  D.mueble = function ([t, x, y, w = 40, o = {}], hue) {
+    if (t === 'mostrador') return caja(x, y, 0, w, 13, 15, { hue, c: .02, techo: col(60, 78, .05) });
+    if (t === 'estante') return estante(x, y, w, hue);
+    if (t === 'cama') { const l = o.llena; return caja(x, y, 0, 20, 36, 7, { l: 100, c: 0, techo: l ? col(hue, 74, .07) : col(250, 96, .004) }) + caja(x + 3, y + 2, 7, 14, 8, 2.500, { l: 100, c: 0, techo: col(250, 99, .002) }); }
+    if (t === 'silla') return caja(x, y, 0, 7, 7, 6, { hue, l: 76, c: .05 }) + caja(x, y, 6, 7, 2, 7, { hue, l: 72, c: .05 });
+    if (t === 'frio') return caja(x, y, 0, 16, 14, 32, { l: 100, c: 0, techo: col(235, 92, .02) }) + qa(x + 2, x + 14, 4, 28, y + 14, col(235, 84, .05));
+    if (t === 'caja') return caja(x, y, 0, 16, 14, 22, { hue: 250, l: 54, c: .02 }) + qa(x + 6, x + 10, 10, 13, y + 14, col(250, 80, .01));
+    if (t === 'equipo') return caja(x, y, 0, 13, 13, 24, { l: 94, c: 0 }) + qa(x + 2, x + 11, 12, 21, y + 13, col(hue, 40, .07));
+    if (t === 'escritorio') return caja(x, y, 0, w, 16, 11, { hue: 60, l: 80, c: .04 }) + caja(x + 6, y + 3, 11, 12, 2, 9, { hue: 250, l: 34, c: .02 });
+    if (t === 'quirurgica') return caja(x, y, 0, 16, 36, 12, { hue, l: 88, c: .03 }) + `<ellipse cx="${P(x + 8, y + 18, 44)[0]}" cy="${P(x + 8, y + 18, 44)[1]}" rx="13" ry="6.500" fill="oklch(95% .02 90)" stroke="oklch(60% .02 250)"/>`;
+    if (t === 'pila') return caja(x, y, 0, 15, 15, 13, { hue: 55, l: 80, c: .05 }) + caja(x + 18, y + 1, 0, 13, 13, 11, { hue: 55, l: 84, c: .05 }) + caja(x + 3, y + 3, 13, 11, 11, 9, { hue: 55, l: 88, c: .05 });
+    return '';
+  };
+
   D.HUE = { em: 15, ad: 245, ce: 300, lb: 190, fx: 155, bc: 55, qx: 275, en: 200, of: 85 };
   const fijo = () => (g.Tema ? g.Tema.fijo() : null);
   D.edificio = function (k, h, cl = '') { const f = fijo(), hue = f != null ? f : h != null ? h : D.HUE[k] || 235, v = CAJA[k]; return `<svg class="edif ${cl}" viewBox="${v.join(' ')}" aria-hidden="true">${EDIF[k](hue)}</svg>`; };
@@ -91,7 +136,8 @@
     social: ['c', p => cuerpo('oklch(62% .08 350)') + `<path d="M40 67l8 18 8-18-8 3z" fill="oklch(95% .01 350)"/>` + cuello(p) + `<rect x="58" y="80" width="12" height="9" rx="1.500" fill="oklch(97% .004 250)"/>` + cabeza(p) + largo(PELO.c)],
     auditoria: ['a', p => cuerpo('oklch(52% .012 250)') + cuello(p) + `<path d="M40 67l8 16 8-16-8 4z" fill="oklch(96% .004 250)"/><path d="M46 71h4l1 13-3 4-3-4z" fill="oklch(32% .02 250)"/>` + cabeza(p) + corto(PELO.n) + lentes],
   };
-  const FONDO = { direccion: 235, admision: 300, caja: 245, farmacia: 155, enfermeria: 200, quirofano: 165, bodega: 55, compras: 85, contabilidad: 275, social: 350, auditoria: 230 };
+  AV.seguridad = ['b', p => cuerpo('oklch(30% .05 255)') + `<path d="M40 67l8 12 8-12-8 3z" fill="oklch(24% .04 255)"/><path d="M60 78l6 2v6c0 3-3 5-6 6-3-1-6-3-6-6v-6z" fill="oklch(80% .12 90)"/>` + cuello(p) + cabeza(p) + `<path d="M31 32c0-11 8-17 17-17s17 6 17 17z" fill="oklch(26% .05 255)"/><path d="M28 31h40c1 3-2 5-6 5H34c-4 0-7-2-6-5z" fill="oklch(20% .04 255)"/><path d="M48 19l3 3-3 4-3-4z" fill="oklch(80% .12 90)"/>`];
+  const FONDO = { seguridad: 255, direccion: 235, admision: 300, caja: 245, farmacia: 155, enfermeria: 200, quirofano: 165, bodega: 55, compras: 85, contabilidad: 275, social: 350, auditoria: 230 };
   let n = 0;
   D.avatar = function (rol, t = 40) {
     const a = AV[rol] || AV.auditoria, id = 'av' + (++n);
@@ -109,7 +155,7 @@
     const via = (a, b, c, d) => pol([P(a, b), P(c, b), P(c, d), P(a, d)], 'oklch(97% .006 250)');
     s += via(-10, 140, 510, 158) + via(-10, 270, 510, 288) + via(170, -10, 188, 420) + via(320, -10, 338, 140);
     [[20, 150], [165, 20], [180, 130], [350, 150], [470, 130], [480, 260], [490, 400], [470, 300], [20, 400], [340, 400], [190, 410], [10, 280]].forEach(([x, y], i) => { if (i % 1 === 0) s += arbol(x, y, .85 + (i % 3) * .1); });
-    for (const [id, x, y] of SITIO) { const [a, b] = P(x, y); s += `<g transform="translate(${a.toFixed(1)} ${b.toFixed(1)})">${EDIF[id](fijo() != null ? fijo() : D.HUE[id])}</g>`; }
+    for (const [id, x, y] of SITIO) { const [a, b] = P(x, y); s += `<g class="bld" data-a="zona" data-id="${id}" transform="translate(${a.toFixed(1)} ${b.toFixed(1)})">${EDIF[id](fijo() != null ? fijo() : D.HUE[id])}</g>`; }
     for (const [id, x, y, alto] of SITIO) {
       const t = tags[id]; if (!t) continue;
       const [a, b] = P(x + 44, y + 36, alto + 20), w = Math.max(116, Math.max(t.t.length, t.v.length) * 7.4 + 46), av = t.rol ? D.avatar(t.rol, 30).replace('<svg ', `<svg x="${(a - w / 2 + 6).toFixed(1)}" y="${(b - 38).toFixed(1)}" `) : '';

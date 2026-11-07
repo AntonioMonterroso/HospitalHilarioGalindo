@@ -148,7 +148,7 @@ const PRECIOS = {
   const MODS = [
     ['Mostrador de farmacia', 'Se escanea, baja del inventario y se cobra en una sola pantalla. Muestra el vencimiento y ofrece alternativas si algo se agotó.', 'u5', 'farmacia'],
     ['Cuenta del paciente', 'Consulta, quirófano y encamamiento cargan a una sola cuenta. Caja cobra una vez.', 'u3', 'caja'],
-    ['Mapa del hospital', 'Camas, quirófanos, farmacia y bodegas con su estado en vivo.', 'u1', 'mapa'],
+    ['Hospital en vivo', 'Maqueta 3D: se levanta el techo de cada edificio y se ve quién trabaja, qué está haciendo y sus datos reales.', 'u1', 'mapa'],
     ['Rastreo de lote', 'De qué proveedor vino, por dónde pasó y qué pacientes lo recibieron. Si hay alerta, se bloquea en todos los dispositivos.', 'u5', 'inventario/rastreo'],
     ['Ingreso de mercadería', 'Cuatro pasos, siempre iguales. Con factura en mano, XML, Excel, orden de compra o donación.', 'u8', 'inventario/ingreso'],
     ['Inventario', 'Seis bodegas, kárdex con costo promedio, traslados con confirmación y conteo a ciegas desde el teléfono.', 'u8', 'inventario/existencias'],
@@ -179,7 +179,7 @@ const PRECIOS = {
   const YA = 'En el demo', MAS = 'Se puede agregar';
   const CONSTRUIR = {
     'Atención': [['Cuenta del paciente', 'Todo lo que consume en una sola cuenta.', YA], ['Citas y agenda médica', 'Agenda por médico, con recordatorio por WhatsApp.', MAS], ['Expediente clínico', 'Historia, evolución y diagnósticos del paciente.', MAS], ['Recetas digitales', 'El médico receta y farmacia la ve al momento.', MAS], ['Órdenes y resultados', 'Laboratorio e imagen con resultados en línea.', MAS], ['Turnos en pantalla', 'Sala de espera con llamado en TV.', MAS], ['Portal del paciente', 'Citas, resultados y pagos desde el teléfono.', MAS]],
-    'Quirófano y salas': [['Consumo por cirugía', 'Lo usado se carga a la cuenta.', YA], ['Mapa de camas', 'Ocupación en vivo.', YA], ['Programación de quirófanos', 'Calendario de salas, equipos y cirujanos.', MAS], ['Kits por cirugía', 'Lista de insumos lista según procedimiento.', MAS], ['Jornadas quirúrgicas', 'Equipos visitantes, donaciones y consumo por jornada.', MAS], ['Consentimientos en tablet', 'Firma del paciente sin papel.', MAS], ['Dietas y lavandería', 'Control de alimentación y ropa hospitalaria.', MAS]],
+    'Quirófano y salas': [['Consumo por cirugía', 'Lo usado se carga a la cuenta.', YA], ['Hospital en vivo', 'Edificios, cuartos y personal con datos reales.', YA], ['Programación de quirófanos', 'Calendario de salas, equipos y cirujanos.', MAS], ['Kits por cirugía', 'Lista de insumos lista según procedimiento.', MAS], ['Jornadas quirúrgicas', 'Equipos visitantes, donaciones y consumo por jornada.', MAS], ['Consentimientos en tablet', 'Firma del paciente sin papel.', MAS], ['Dietas y lavandería', 'Control de alimentación y ropa hospitalaria.', MAS]],
     'Farmacia e inventario': [['Mostrador de venta', 'Escanear, cobrar y bajar del inventario.', YA], ['Lotes y vencimientos', 'Sale primero lo que vence primero.', YA], ['Rastreo y bloqueo de lotes', 'A qué pacientes llegó cada lote.', YA], ['Control de sustancias', 'Receta y balance mensual.', YA], ['Etiquetas propias', 'Impresión de códigos de barras.', MAS], ['Reposición automática', 'Sugiere qué pedir según el consumo.', MAS], ['Cadena de frío', 'Sensores y alertas de temperatura.', MAS], ['Activos y mantenimiento', 'Equipo médico, depreciación y servicios.', MAS]],
     'Compras': [['Órdenes y aprobaciones', 'Por monto y por puesto.', YA], ['Ingreso por XML y Excel', 'Sin digitar la factura.', YA], ['Cotizaciones', 'Comparar precios entre proveedores.', MAS], ['Portal de proveedores', 'Órdenes y pagos en línea.', MAS], ['Presupuesto por área', 'Lo gastado contra lo aprobado.', MAS]],
     'Finanzas y ley': [['Libros y retenciones', 'Compras, ventas e ISR.', YA], ['Factura con certificador', 'Opcional, automática desde la venta.', MAS], ['Contabilidad completa', 'Catálogo, balances y estados financieros.', MAS], ['Bancos y conciliación', 'Cheques, depósitos y estados de cuenta.', MAS], ['Planilla e IGSS', 'Nómina, prestaciones y descuentos.', MAS], ['Aseguradoras', 'Cuentas por cobrar y reclamos.', MAS]],
@@ -194,6 +194,14 @@ const PRECIOS = {
   }
   $('#cnF').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) { cnSel = b.dataset.k; pintarCn(); } });
   pintarCn();
+
+  /* Seguridad */
+  $('#nivP').innerHTML = Dibujo.NIVELES.map(([t, d, st], i) => `<li data-r style="--i:${i}" class="${st === 'En el demo' ? 'ya' : ''}"><i>${i + 1}</i><div><b>${t}</b><span>${d}</span></div><em>${st}</em></li>`).join('');
+  $$('#nivP [data-r]').forEach(n => io.observe(n));
+  $('#rondaP').innerHTML = `<g class="p-g"><g class="p-haz"><path d="M2 -15L120 -52L120 22z"/></g>${Dibujo.mini('seguridad', 1)}</g>`;
+  const NOM = { fx: 'Farmacia', bc: 'Bodega central', ad: 'Admisión y caja', em: 'Emergencia', ce: 'Consulta externa', lb: 'Laboratorio e imagen', qx: 'Quirófanos', en: 'Encamamiento' };
+  const pintarSeg = () => { $('#segA').innerHTML = Object.entries(Dibujo.SEG).map(([k, [n, l]]) => `<div class="seg-c">${Dibujo.edificio(k)}<div><b>${NOM[k]}</b><em>Seguridad ${n.toLowerCase()}</em><span>${l[0]}</span></div></div>`).join(''); };
+  pintarSeg();
 
   /* Ley */
   const dlg = $('#detalle');
@@ -214,7 +222,7 @@ const PRECIOS = {
   tonos.addEventListener('click', ev => { const b = ev.target.closest('.sw'); if (b) cambiar(b.dataset.h === 'areas' ? null : +b.dataset.h, ev.clientX, ev.clientY); });
   hue.addEventListener('input', () => { Tema.guardar(+hue.value); marcar(); });
   marcar();
-  addEventListener('tema', () => { pintarMosaico(); pintarEtapas(); pintarRoles(); });
+  addEventListener('tema', () => { pintarMosaico(); pintarEtapas(); pintarRoles(); pintarSeg(); });
 
   /* Inversión */
   const INCLUYE = {

@@ -48,7 +48,7 @@
   let zi = 1000;
   U.hoja = function (o) {
     const capa = document.createElement('div');
-    capa.className = 'capa' + (o.dialogo ? ' dialogo' : ''); capa.style.zIndex = ++zi; if (o.area != null) capa.style.setProperty('--a', o.area);
+    capa.className = 'capa' + (o.dialogo ? ' dialogo' : ''); capa.style.zIndex = ++zi; if (o.area != null) capa.style.setProperty('--a', o.area); if (o.clase) capa.classList.add(o.clase);
     capa.innerHTML = `<section class="hoja" role="dialog" aria-modal="true" aria-label="${e(o.titulo)}" style="--ancho:${o.ancho || 560}px">
       <header class="hoja-cab"><div><h2>${e(o.titulo)}</h2>${o.sub ? `<p>${e(o.sub)}</p>` : ''}</div><button class="ojo" data-cerrar aria-label="Cerrar">${U.ic('x')}</button></header>
       <div class="hoja-cuerpo">${o.cuerpo || ''}</div>${o.pie ? `<footer class="hoja-pie">${o.pie}</footer>` : ''}</section>`;

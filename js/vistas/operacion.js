@@ -34,7 +34,7 @@
     return out;
   }
   const vivoHtml = () => {
-    const b = db().bitacora; const ult = b.slice(-14).reverse();
+    const b = db().bitacora; const ult = b.slice(-7).reverse();
     return `<ul class="vivo" aria-live="off">${ult.map(x => { const d = (x.disp || '').split(' · '); return `<li class="${x.ok ? '' : 'mal'}" title="${e(x.disp || '')}">${A.av(x.u, 30)}<span>${e(x.txt)}<small>${e(A.nomU(x.u))} · ${e(d[0] || '')}</small></span><time>${U.hora(x.ts)}</time></li>`; }).join('')}</ul>`;
   };
   A.vivoHtml = vivoHtml; A.pendientesRol = pendientesRol; A.desdeHoy = desdeHoy;
@@ -47,11 +47,20 @@
       const pend = pendientesRol();
       const valor = d.productos.reduce((a, p) => a + p.valor, 0);
       const pagar = d.cxp.filter(x => x.estado === 'pendiente').reduce((a, x) => a + x.aPagar, 0);
-      const cifras = r === 'direccion' || r === 'contabilidad' || r === 'auditoria'
-        ? [['Ingresos de hoy', Q(ing), `${U.n(dtes.length)} documentos`], ['Pacientes atendidos hoy', U.n(cuentasHoy), 'cuentas abiertas hoy'], ['Inventario valorado', Q(valor), `${U.n(d.productos.length)} productos`], ['Por pagar a proveedores', Q(pagar), `${d.cxp.filter(x => x.estado === 'pendiente').length} documentos`]]
-        : r === 'bodega' || r === 'compras' || r === 'farmacia'
-          ? [['Valor en inventario', Q(valor), ''], ['Bajo el mínimo', U.n(d.productos.filter(p => p.qty < p.min).length), 'productos'], ['Lotes activos', U.n(d.lotes.filter(l => Object.values(l.ex).some(n => n > 0)).length), ''], ['Movimientos hoy', U.n(d.movs.reduce((n, m) => n + (m.f >= hoy ? 1 : 0), 0)), '']]
-          : [['Pacientes atendidos hoy', U.n(cuentasHoy), ''], ['Cuentas abiertas', U.n(d.cuentas.filter(c => c.estado === 'abierta').length), ''], ['Facturado hoy', Q(ing), '']];
+      const tu = A.turno(), cobrado = tu ? Object.values(tu.mov).reduce((a, b) => a + b, 0) : 0;
+      const pendP = d.pedidos.filter(p => p.estado === 'pendiente').length, porCobrar = d.cuentas.filter(c => c.estado === 'abierta' && c.total > 0).length;
+      const cifras = {
+        contabilidad: [['Ingresos de hoy', Q(ing)], ['Por pagar', Q(pagar)], ['Inventario', Q(valor)]],
+        auditoria: [['Ingresos de hoy', Q(ing)], ['Inventario', Q(valor)], ['Rechazadas hoy', U.n(d.bitacora.filter(b => !b.ok && b.ts >= hoy).length)]],
+        farmacia: [['Pedidos en espera', U.n(pendP)], ['Cobrado en mi caja', Q(cobrado)]],
+        caja: [['Por cobrar', U.n(porCobrar)], ['Cobrado en mi turno', Q(cobrado)]],
+        bodega: [['Traslados por enviar', U.n(d.traslados.filter(t => t.estado === 'solicitado').length)], ['Órdenes por recibir', U.n(d.ocs.filter(o => ['aprobada', 'parcial'].includes(o.estado)).length)]],
+        compras: [['Solicitudes', U.n(d.solicitudes.filter(x => x.estado === 'pendiente').length)], ['Bajo el mínimo', U.n(d.productos.filter(p => p.qty < p.min).length)]],
+        admision: [['Pacientes hoy', U.n(cuentasHoy)], ['Cuentas abiertas', U.n(d.cuentas.filter(c => c.estado === 'abierta').length)]],
+        enfermeria: [['Pacientes en sala', U.n(d.cuentas.filter(c => c.estado === 'abierta' && c.tipo === 'encamamiento').length)], ['Pedidos en espera', U.n(pendP)]],
+        quirofano: [['Cirugías activas', U.n(d.cuentas.filter(c => c.estado === 'abierta' && c.tipo === 'cirugia').length)], ['Pedidos en espera', U.n(pendP)]],
+        social: [['Por resolver', U.n(d.cuentas.filter(c => c.desc && c.desc.estado === 'pendiente' && !c.dte).length)]],
+      }[r] || [];
       let graf = '';
       if (['direccion', 'contabilidad', 'auditoria'].includes(r)) {
         const dias = new Map(); for (let i = 29; i >= 0; i--) dias.set(hoy - i * M.DIA, 0);
@@ -64,7 +73,7 @@
           <section class="seccion"><h2>Por área</h2>${orden.map(([a, v]) => `<div class="area"><span>${e(a)}</span><span class="num">${Q(v)}</span><i><u style="width:${(v / max * 100).toFixed(1)}%"></u></i></div>`).join('')}</section>`;
       }
       return `${cab(M.sesion.nombre, `${new Date().getHours() < 12 ? 'Buenos días' : new Date().getHours() < 18 ? 'Buenas tardes' : 'Buenas noches'}. Hoy es ${U.fecha(Date.now())}.`).replace(/<i class="tile">.*?<\/i>/, Dibujo.avatar(M.sesion.rol, 56))}
-        <div class="cifras">${cifras.map(([a, b, c]) => `<div class="cifra"><span>${e(a)}</span><b>${e(b)}</b>${c ? `<small>${e(c)}</small>` : ''}</div>`).join('')}</div>
+        <div class="cifras">${cifras.map(([a, b]) => `<div class="cifra"><span>${e(a)}</span><b>${e(b)}</b></div>`).join('')}</div>
         <div class="dos"><div>
           <section class="seccion"><h2>Qué falta</h2>${pend.length ? `<div class="pend">${pend.map(p => `<a class="fila-pend ${p.nivel}" href="${p.ir}" style="--a:${A.hue(p.ir)}"><b>${U.n(p.n)}</b><span class="q">${e(p.t)}<span>${e(p.s)}</span></span>${U.ic('chevron-right')}</a>`).join('')}</div>` : `<div class="nota bien">${U.ic('circle-check')}<span>Todo al día en su área.</span></div>`}</section>
           ${graf}</div>
@@ -111,7 +120,7 @@
     const nAb = cs.filter(c => c.estado === 'abierta').length;
     return `${cab('Cuentas de pacientes', 'Todo lo que un paciente consume queda en su cuenta hasta que Caja cobra.')}
       <div class="filtros">${U.busca('bc', st.bc, 'Número de cuenta, paciente o expediente')}${U.chips([['hoy', 'Hoy'], ['abierta', `Abiertas (${U.n(nAb)})`], ['por cobrar', 'Crédito'], ['todas', 'Todas']], est, 'est')}</div>
-      ${U.tabla({ filas, pag: st.pag_t, clic: 'ver', vacioT: 'Sin cuentas aquí', vacio: 'Cambie el filtro o busque por paciente.', cols: [{ t: 'Cuenta', h: c => `${e(c.num)}<span class="t-sub">${e(pacDe(c).nombre)}</span>` }, { t: 'Abierta', h: c => U.fh(c.abierta) }, { t: 'Tipo', h: c => e(C.TIPOS_CUENTA[c.tipo].nombre) }, { t: 'Estado', h: c => A.etEstado(c.estado) + (c.desc && c.desc.estado === 'pendiente' ? ' ' + U.et('Descuento', 'ambar') : '') }, { t: 'Total', der: 1, h: c => Q(c.total) }] })}`;
+      ${U.tabla({ filas, pag: st.pag_t, clic: 'ver', vacioT: 'Sin cuentas aquí', vacio: 'Cambie el filtro o busque por paciente.', cols: [{ t: 'Cuenta', h: c => `${e(c.num)}<span class="t-sub">${e(pacDe(c).nombre)}</span>` }, { t: 'Atención', h: c => `${e(C.TIPOS_CUENTA[c.tipo].nombre)} · ${c.abierta >= A.hoy() ? U.hora(c.abierta) : U.fecha(c.abierta)}` }, { t: 'Estado', h: c => A.etEstado(c.estado) + (c.desc && c.desc.estado === 'pendiente' ? ' ' + U.et('Descuento', 'ambar') : '') }, { t: 'Total', der: 1, h: c => Q(c.total) }] })}`;
   }
   function detalleCuenta(id) {
     const c = db().ix.cuenta.get(id); if (!c) return cab('Cuenta no encontrada');

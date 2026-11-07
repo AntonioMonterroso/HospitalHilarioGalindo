@@ -17,7 +17,7 @@
 <body>
 <header class="bar">
   <a class="firma" href="#inicio"><img src="img/m-monterroso.png" alt="" width="36" height="29"><span><b>Monterroso Dev Studio</b><small>Sistemas a la medida</small></span></a>
-  <nav aria-label="Secciones"><a href="#viaje">Recorrido</a><a href="#demo">Pruébelo</a><a href="#hace">Qué hace</a><a href="#construir">Crecer</a><a href="#colores">Colores</a><a href="#inversion">Inversión</a></nav>
+  <nav aria-label="Secciones"><a href="#viaje">Recorrido</a><a href="#demo">Pruébelo</a><a href="#hace">Qué hace</a><a href="#construir">Crecer</a><a href="#seguridad">Seguridad</a><a href="#colores">Colores</a><a href="#inversion">Inversión</a></nav>
   <a class="btn chico" href="#inversion">Tu plan</a>
 </header>
 
@@ -121,12 +121,23 @@
   </div>
 </section>
 
+<section id="seguridad" class="seccion hue" style="--h:255">
+  <div class="caja">
+    <header class="cab" data-r><span class="n">06</span><div><p class="eti">Seguridad</p><h2>Cinco niveles, <em>uno sobre otro</em></h2></div></header>
+    <div class="seg-g">
+      <div class="ronda-p" aria-hidden="true" data-r><svg viewBox="-110 -80 260 110" id="rondaP"></svg><p>En el hospital en vivo, un guardia recorre cada edificio con su lámpara. Tóquelo y le dice qué protege en esa área.</p></div>
+      <ol class="niv-p" id="nivP"></ol>
+    </div>
+    <div class="seg-a" id="segA" data-r></div>
+  </div>
+</section>
+
 <section id="colores" class="seccion hue" style="--h:235">
   <div class="caja">
-    <header class="cab" data-r><span class="n">06</span><div><p class="eti">Personalización</p><h2>Con <em>sus</em> colores</h2></div></header>
+    <header class="cab" data-r><span class="n">07</span><div><p class="eti">Personalización</p><h2>Con <em>sus</em> colores</h2></div></header>
     <div class="colores-g" data-r>
       <div>
-        <p class="intro" style="margin-top:0">Toque un color y cambia todo: esta página, el sistema, el mapa y los edificios.</p>
+        <p class="intro" style="margin-top:0">Toque un color y cambia todo. También se ajustan edificios y cuartos, puestos, reglas, permisos y flujos a la forma en que trabaja el hospital.</p>
         <div class="tonos" id="tonos"></div>
         <label class="gusto" for="hue">A su gusto<input id="hue" type="range" min="0" max="359" step="1"></label>
       </div>
@@ -137,7 +148,7 @@
 
 <section id="inversion" class="seccion hue" style="--h:55">
   <div class="caja">
-    <header class="cab" data-r><span class="n">07</span><div><p class="eti">Inversión</p><h2>Dos formas de <em>tenerlo</em></h2></div></header>
+    <header class="cab" data-r><span class="n">08</span><div><p class="eti">Inversión</p><h2>Dos formas de <em>tenerlo</em></h2></div></header>
     <div class="plan" data-r>
       <div class="plan-sel">
         <div class="seg" role="group" aria-label="Forma de pago"><i id="pill"></i><button id="sMen" aria-pressed="true">Pago mensual</button><button id="sCom" aria-pressed="false">Compra única</button></div>
@@ -165,7 +176,7 @@
 
 <section id="pasos" class="seccion hue" style="--h:200">
   <div class="caja dos">
-    <header class="cab" data-r><span class="n">08</span><div><p class="eti">Cómo seguimos</p><h2>De <em>4 a 6 semanas</em></h2><p class="intro" style="font-size:1rem">Integrado completo, con un máximo de 8 semanas.</p></div></header>
+    <header class="cab" data-r><span class="n">09</span><div><p class="eti">Cómo seguimos</p><h2>De <em>4 a 6 semanas</em></h2><p class="intro" style="font-size:1rem">Integrado completo, con un máximo de 8 semanas.</p></div></header>
     <ol class="tiempo" id="tiempo">
       <li data-r><b>Revisión del demo</b>Las áreas lo recorren y dicen qué falta y qué se hace distinto.</li>
       <li data-r><b>Levantamiento · 1 semana</b>Procesos reales, catálogos, roles, precios y criterios fiscales.</li>

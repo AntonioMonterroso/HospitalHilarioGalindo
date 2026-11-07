@@ -20,12 +20,12 @@
     ['Sale primero lo que vence primero', 'El sistema elige el lote solo.'],
     ['Nada se borra', 'Cada error se corrige con otro movimiento, y queda en la bitácora.'],
   ];
-  A.vistas.config.ruta = p => ({ reglas: 'Reglas', permisos: 'Permisos', catalogos: 'Catálogos', datos: 'Datos' }[p[1]] || 'General');
+  A.vistas.config.ruta = p => ({ reglas: 'Reglas', permisos: 'Permisos', seguridad: 'Seguridad', catalogos: 'Catálogos', datos: 'Datos' }[p[1]] || 'General');
   A.vistas.config.html = function (st, p) {
     const tab = p[1] || 'general';
-    const tabs = U.tabs([['general', 'General'], ['reglas', 'Reglas'], ['permisos', 'Permisos'], ['catalogos', 'Catálogos'], ['datos', 'Datos']].map(([id, t]) => ({ id, t })), tab, 'config');
+    const tabs = U.tabs([['general', 'General'], ['reglas', 'Reglas'], ['permisos', 'Permisos'], ['seguridad', 'Seguridad'], ['catalogos', 'Catálogos'], ['datos', 'Datos']].map(([id, t]) => ({ id, t })), tab, 'config');
     if (tab === 'general') { const h = general(); return `${A.cab('Configuración', 'Se cambia solo con el botón Editar.', `<button class="btn pri" data-a="editar">${U.ic('pencil')}Editar</button>`)}${tabs}${h.slice(h.indexOf('<h2'))}`; }
-    return { reglas, permisos, catalogos, datos }[tab](st, tabs);
+    return { reglas, permisos, seguridad, catalogos, datos }[tab](st, tabs);
   };
   function reglas(st, tabs) {
     const c = db().cfg;
@@ -39,6 +39,13 @@
       <div class="filtros">${U.chips(Object.entries(C.ROLES).map(([id, x]) => [id, x.nombre]), k, 'rolP')}</div>
       <div class="con-av" style="margin-bottom:12px">${Dibujo.avatar(k, 52)}<span class="mudo">${e(r.desc)}</span></div>
       <div class="fichas">${A.PERMISOS.map(([id, t]) => `<div class="fp perm ${r.acciones.includes(id) ? 'si' : ''}"><b>${e(t)}</b>${r.acciones.includes(id) ? U.et('Puede', 'bien') : U.et('No puede')}</div>`).join('')}</div>`;
+  }
+  function seguridad(st, tabs) {
+    const hoy = A.hoy(), b = db().bitacora;
+    return `${A.cab('Configuración', 'Cinco niveles de protección, uno sobre otro.')}${tabs}
+      <div class="cifras"><div class="cifra"><span>Intentos detenidos hoy</span><b>${U.n(b.filter(x => !x.ok && x.ts >= hoy).length)}</b></div><div class="cifra"><span>Acciones registradas</span><b>${U.n(b.length)}</b></div><div class="cifra"><span>Usuarios activos</span><b>${U.n(db().usuarios.filter(u => u.activo).length)}</b></div></div>
+      ${A.nivelesHtml()}
+      <section class="seccion" style="margin-top:24px"><h2>Por área</h2><div class="fichas">${Object.entries(Dibujo.SEG).map(([k, [n, l]]) => `<div class="fp"><b>${e({ fx: 'Farmacia', bc: 'Bodega central', ad: 'Admisión y caja', em: 'Emergencia', ce: 'Consulta externa', lb: 'Laboratorio e imagen', qx: 'Quirófanos', en: 'Encamamiento' }[k])}</b><span>${e(l[0])}</span>${U.et(n, n === 'Máxima' ? 'alerta' : n === 'Alta' ? 'ambar' : '')}</div>`).join('')}</div></section>`;
   }
   function catalogos(st, tabs) {
     const q = U.norm(st.bs || ''), f = db().servicios.filter(s => !q || U.norm(s.nombre + s.cod + s.area).includes(q));
