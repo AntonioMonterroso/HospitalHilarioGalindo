@@ -719,3 +719,15 @@ html[data-tono] .plano-3d { background: oklch(97% .016 var(--tono)); }
   .campus .pin { display: none; }
   .zona-cab .edif { width: 96px; height: 88px; }
 }
+
+/* Sesión siempre a mano cuando el menú lateral no la muestra completa */
+.yo { display: none; flex: none; border-radius: 50%; }
+.yo:active { transform: scale(.97); }
+.con-av b { display: block; font-weight: 650; }
+@media (max-width: 1100px) { .yo { display: block; } }
+@media (max-width: 720px) {
+  .tope .pulso { order: 1; }
+  .tope .pulso span { display: none; }
+  .tope .yo { order: 1; }
+  .tope .btn.chico { order: 1; }
+}

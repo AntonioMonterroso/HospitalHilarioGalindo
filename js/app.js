@@ -72,7 +72,7 @@
       <div class="quien">${Dibujo.avatar(u.rol, 40)}<b>${e(u.nombre)}</b><span>${e(u.disp.split(' · ')[0])}</span><button data-a="salir">${U.ic('log-out')}<span>Cambiar de rol</span></button></div></aside>
       <div class="central"><header class="tope"><div class="ruta" id="ruta"></div>
         <div class="buscar-global">${U.ic('search')}<input type="search" id="global" placeholder="Paciente, producto, cuenta, factura" aria-label="Buscar en todo el sistema"></div>
-        <button class="btn chico" data-a="guia">${U.ic('info')}Guía</button><span class="pulso" id="pulso"><i></i><span>En línea</span></span></header>
+        <button class="btn chico" data-a="guia">${U.ic('info')}Guía</button><span class="pulso" id="pulso"><i></i><span>En línea</span></span><button class="yo" data-a="yo" aria-label="Mi sesión: cambiar de puesto">${Dibujo.avatar(u.rol, 38)}</button></header>
       <main class="vista" id="vista"></main></div></div><nav class="barra-movil" id="barra" aria-label="Principal"></nav>`;
     pintarMenu();
     document.getElementById('global').addEventListener('focus', A.buscarGlobal);
@@ -87,6 +87,10 @@
       b.innerHTML = pri.map(id => { const [t, i] = A.MENU[id]; return `<a href="#/${id}" style="--m:${A.hue(id)}" ${id === v ? 'aria-current="page"' : ''}><i class="mi">${U.ic(i)}</i><span>${e(t.split(' ')[0])}</span>${p[id] ? `<span class="cuenta">${p[id]}</span>` : ''}</a>`; }).join('') + (vs.length > 5 ? `<button data-a="mas">${U.ic('ellipsis')}<span>Más</span></button>` : '');
     }
   }
+  A.miSesion = function () {
+    const u = M.sesion;
+    const h = U.hoja({ titulo: 'Mi sesión', dialogo: true, cuerpo: `<div class="con-av">${Dibujo.avatar(u.rol, 56)}<span><b>${e(u.nombre)}</b><span class="t-sub">${e(A.rol().desc)}</span></span></div>`, pie: `<button class="btn" data-cerrar>Seguir aquí</button><button class="btn pri" data-a="salir">${U.ic('log-out')}Cambiar de puesto</button>`, acciones: { salir() { h.cerrar(); A.salir(); } } });
+  };
   A.masMenu = function () {
     const vs = A.rol().vistas.slice(4);
     const h = U.hoja({ titulo: 'Más', cuerpo: `<div class="pend">${vs.map(id => `<a class="fila-pend" href="#/${id}" data-a="ir">${U.ic(A.MENU[id][1])}<span class="q">${e(A.MENU[id][0])}</span>${U.ic('chevron-right')}</a>`).join('')}<a class="fila-pend" href="#/dispositivos" data-a="ir">${U.ic('monitor')}<span class="q">Varios dispositivos a la vez</span>${U.ic('chevron-right')}</a><a class="fila-pend" href="propuesta.html">${U.ic('file-text')}<span class="q">Propuesta y precios</span>${U.ic('chevron-right')}</a></div><button class="btn" data-a="salir">${U.ic('log-out')}Cambiar de rol</button>`, acciones: { ir(_, b) { h.cerrar(); location.hash = b.getAttribute('href'); }, salir() { h.cerrar(); A.salir(); } } });
@@ -129,6 +133,7 @@
     if (a === 'salir') return A.salir();
     if (a === 'mas') return A.masMenu();
     if (a === 'guia') return A.guias();
+    if (a === 'yo') return A.miSesion();
     if (a === 'pag') { const [n, p] = id.split('|'); A.st[actual.id]['pag_' + n] = +p; return A.repintar(); }
     const fn = actual && actual.v.acc && actual.v.acc[a];
     if (fn) { ev.preventDefault(); fn(id, b, ev); }
