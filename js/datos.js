@@ -27,7 +27,7 @@
     farmacia: { nombre: 'Farmacia (regente)', desc: 'Vende y cobra en mostrador, despacha pedidos y lleva los controlados.', vistas: ['inicio', 'farmacia', 'mapa', 'inventario', 'cuentas'], acciones: ['caja', 'cuenta.facturar', 'lote.bloquear', 'farmacia', 'cuenta.cargo.producto', 'inv.solicitar', 'inv.recibir', 'inv.baja', 'inv.ajuste', 'compras.solicitar'] },
     enfermeria: { nombre: 'Enfermería', desc: 'Pide a farmacia y carga lo que usa cada paciente.', vistas: ['inicio', 'sala', 'mapa', 'cuentas'], acciones: ['pedido', 'cuenta.cargo.servicio', 'inv.solicitar', 'inv.recibir'] },
     quirofano: { nombre: 'Quirófano', desc: 'Registra el consumo de cada cirugía.', vistas: ['inicio', 'sala', 'mapa', 'cuentas', 'inventario'], acciones: ['pedido', 'cuenta.cargo.producto', 'cuenta.cargo.servicio', 'inv.solicitar', 'inv.recibir', 'compras.solicitar'] },
-    bodega: { nombre: 'Bodega central', desc: 'Recibe, ubica, traslada y cuenta el inventario.', vistas: ['inicio', 'inventario', 'compras', 'mapa'], acciones: ['lote.bloquear', 'inv.enviar', 'inv.recibir', 'inv.solicitar', 'inv.ajuste', 'inv.baja', 'inv.conteo', 'compras.recibir', 'donacion', 'producto'] },
+    bodega: { nombre: 'Bodega central', desc: 'Recibe, ubica, traslada y cuenta el inventario.', vistas: ['inicio', 'inventario', 'compras', 'mapa'], acciones: ['inv.ingreso', 'lote.bloquear', 'inv.enviar', 'inv.recibir', 'inv.solicitar', 'inv.ajuste', 'inv.baja', 'inv.conteo', 'compras.recibir', 'donacion', 'producto'] },
     compras: { nombre: 'Compras', desc: 'Convierte solicitudes en órdenes de compra.', vistas: ['inicio', 'compras', 'inventario'], acciones: ['compras.solicitar', 'solicitud.resolver', 'compras.oc', 'proveedor', 'producto'] },
     contabilidad: { nombre: 'Contabilidad', desc: 'Libros de ley, cuentas por pagar y partidas.', vistas: ['inicio', 'ley', 'compras', 'inventario', 'cuentas', 'reportes', 'bitacora'], acciones: ['compras.pagar', 'ajuste.aprobar', 'nota.credito'] },
     social: { nombre: 'Trabajo social', desc: 'Resuelve los descuentos por estudio socioeconómico.', vistas: ['inicio', 'social', 'cuentas', 'admision'], acciones: ['descuento.resolver', 'descuento.pedir'] },
@@ -35,18 +35,25 @@
   };
 
   C.USUARIOS = [
-    { id: 'u1', nombre: 'Lic. Rebeca Ovalle', rol: 'direccion', pin: '1000', disp: 'Computadora · Dirección' },
-    { id: 'u2', nombre: 'Sandra Tzoc', rol: 'admision', pin: '2000', disp: 'Computadora · Admisión 1' },
-    { id: 'u3', nombre: 'Heidy Coyoy', rol: 'caja', pin: '3000', disp: 'Computadora · Caja 1' },
-    { id: 'u4', nombre: 'Marvin Ixcot', rol: 'caja', pin: '3100', disp: 'Computadora · Caja 2' },
-    { id: 'u5', nombre: 'Q.F. Lourdes Barrios', rol: 'farmacia', pin: '4000', disp: 'Computadora · Farmacia' },
-    { id: 'u6', nombre: 'Enf. Dora Xicará', rol: 'enfermeria', pin: '5000', disp: 'Tablet · Encamamiento' },
-    { id: 'u7', nombre: 'Enf. Wilson Batz', rol: 'quirofano', pin: '6000', disp: 'Tablet · Quirófano' },
-    { id: 'u8', nombre: 'Elmer Ajanel', rol: 'bodega', pin: '7000', disp: 'Teléfono · Bodega' },
-    { id: 'u9', nombre: 'Karla Maldonado', rol: 'compras', pin: '8000', disp: 'Computadora · Compras' },
-    { id: 'u10', nombre: 'Lic. Óscar Figueroa', rol: 'contabilidad', pin: '9000', disp: 'Computadora · Contabilidad' },
-    { id: 'u11', nombre: 'T.S. Irma Cux', rol: 'social', pin: '1100', disp: 'Computadora · Trabajo social' },
-    { id: 'u12', nombre: 'Lic. Mynor Pineda', rol: 'auditoria', pin: '1200', disp: 'Computadora · Auditoría' },
+    { id: 'u1', nombre: 'Dirección general', rol: 'direccion', pin: '1000', disp: 'Computadora · Dirección' },
+    { id: 'u2', nombre: 'Admisión', rol: 'admision', pin: '2000', disp: 'Computadora · Admisión 1' },
+    { id: 'u3', nombre: 'Caja 1', rol: 'caja', pin: '3000', disp: 'Computadora · Caja 1' },
+    { id: 'u4', nombre: 'Caja 2', rol: 'caja', pin: '3100', disp: 'Computadora · Caja 2' },
+    { id: 'u5', nombre: 'Regente de farmacia', rol: 'farmacia', pin: '4000', disp: 'Computadora · Farmacia' },
+    { id: 'u6', nombre: 'Enfermería de sala', rol: 'enfermeria', pin: '5000', disp: 'Tablet · Encamamiento' },
+    { id: 'u7', nombre: 'Enfermería de quirófano', rol: 'quirofano', pin: '6000', disp: 'Tablet · Quirófano' },
+    { id: 'u8', nombre: 'Encargado de bodega', rol: 'bodega', pin: '7000', disp: 'Teléfono · Bodega' },
+    { id: 'u9', nombre: 'Encargado de compras', rol: 'compras', pin: '8000', disp: 'Computadora · Compras' },
+    { id: 'u10', nombre: 'Contador general', rol: 'contabilidad', pin: '9000', disp: 'Computadora · Contabilidad' },
+    { id: 'u11', nombre: 'Trabajo social', rol: 'social', pin: '1100', disp: 'Computadora · Trabajo social' },
+    { id: 'u12', nombre: 'Auditor interno', rol: 'auditoria', pin: '1200', disp: 'Computadora · Auditoría' },
+  ];
+
+  /* Pantalla de entrada: puestos agrupados, con su ícono y color */
+  C.PUESTOS = [
+    ['Atención al paciente', [['u2', 'Registra pacientes y abre cuentas', 'user-round', 300], ['u3', 'Cobra las cuentas y cierra su turno', 'wallet', 245], ['u4', 'Cobra las cuentas y cierra su turno', 'wallet', 245], ['u6', 'Pide a farmacia desde la tablet', 'stethoscope', 200], ['u7', 'Registra el consumo de cada cirugía', 'activity', 275], ['u11', 'Autoriza los descuentos sociales', 'heart-handshake', 350]]],
+    ['Farmacia e inventario', [['u5', 'Vende, cobra y lleva los controlados', 'pill', 155], ['u8', 'Ingresa mercadería, traslada y cuenta', 'boxes', 55], ['u9', 'Convierte solicitudes en órdenes', 'shopping-cart', 85]]],
+    ['Administración', [['u1', 'Ve todo y aprueba las compras grandes', 'building-2', 235], ['u10', 'Libros, retenciones y pagos', 'book-open-check', 275], ['u12', 'Revisa todo sin cambiar nada', 'shield-check', 230]]],
   ];
 
   C.TIPOS_CUENTA = {

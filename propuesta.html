@@ -9,7 +9,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231d4438'/%3E%3Cpath d='M13 7h6v6h6v6h-6v6h-6v-6H7v-6h6z' fill='%23f6f1e6'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script>document.documentElement.classList.add('js')</script>
 <script src="js/tema.js"></script>
 <link rel="stylesheet" href="css/propuesta.css">
@@ -17,17 +17,19 @@
 <body>
 <header class="bar">
   <a class="firma" href="#inicio"><img src="img/m-monterroso.png" alt="" width="36" height="29"><span><b>Monterroso Dev Studio</b><small>Sistemas a la medida</small></span></a>
-  <nav aria-label="Secciones"><a href="#viaje">Recorrido</a><a href="#demo">Pruébelo</a><a href="#hace">Qué hace</a><a href="#colores">Colores</a><a href="#inversion">Inversión</a></nav>
+  <nav aria-label="Secciones"><a href="#viaje">Recorrido</a><a href="#demo">Pruébelo</a><a href="#hace">Qué hace</a><a href="#construir">Crecer</a><a href="#colores">Colores</a><a href="#inversion">Inversión</a></nav>
   <a class="btn chico" href="#inversion">Tu plan</a>
 </header>
 
 <main>
 <section id="inicio" class="portada">
-  <div class="caja">
+  <div class="caja"><div>
     <p class="eti" data-r>Preparada para el Patronato Pro-Salud del Hospital Hilario Galindo</p>
     <h1 id="titulo">Cada ampolla, <em>seguida</em> hasta el paciente que la recibió.</h1>
     <p class="lead" data-r style="--i:7">Vender, cobrar y controlar el inventario en un solo paso. Lo usan al mismo tiempo la farmacia, la caja, la bodega y las salas, desde cualquier dispositivo.</p>
     <div class="acc" data-r style="--i:9"><a class="btn" href="index.html">Abrir el demo</a><a class="btn suave" href="#viaje">Ver cómo funciona</a></div>
+    </div>
+    <div class="mosaico" id="mosaico" aria-hidden="true"></div>
   </div>
   <svg class="pulso-h" id="pulsoH" viewBox="0 0 1200 220" preserveAspectRatio="none" aria-hidden="true"></svg>
 </section>
@@ -66,7 +68,7 @@
   </div>
 </section>
 
-<section id="demo" class="seccion tinte">
+<section id="demo" class="seccion hue" style="--h:245">
   <div class="caja">
     <header class="cab" data-r><span class="n">01</span><div><p class="eti">Pruébelo</p><h2>Todo el hospital, <em>al mismo tiempo</em></h2></div></header>
     <p class="intro" data-r>Esto no es un video. Son tres sesiones del sistema con dos meses de operación inventada: más de 18,000 cuentas. Simule la hora pico y véalas moverse.</p>
@@ -79,23 +81,33 @@
   </div>
 </section>
 
-<section id="hace" class="seccion">
+<section id="hace" class="seccion hue" style="--h:155">
   <div class="caja dos">
     <header class="cab" data-r><span class="n">02</span><div><p class="eti">Qué hace</p><h2>Hecho para <em>su</em> operación</h2></div></header>
     <div class="mods" id="mods" data-r></div>
   </div>
 </section>
 
-<section id="roles" class="seccion tinte">
+<section id="roles" class="seccion hue" style="--h:300">
   <div class="caja">
-    <header class="cab" data-r><span class="n">03</span><div><p class="eti">Quién lo usa</p><h2>Once roles, <em>una sola verdad</em></h2></div></header>
-    <div class="roles" data-r><div class="chips" id="chips" role="tablist" aria-label="Roles"></div><div class="rol" id="rol" role="tabpanel" aria-live="polite"></div></div>
+    <header class="cab" data-r><span class="n">03</span><div><p class="eti">Quién lo usa</p><h2>Once puestos, <em>una sola verdad</em></h2></div></header>
+    <p class="intro" data-r>Cada puesto entra con su PIN y ve solo lo suyo. Toque uno para entrar al demo en su lugar.</p>
+    <div class="rol-g" id="rolG" data-r></div>
   </div>
 </section>
 
-<section id="ley" class="seccion">
+<section id="construir" class="seccion hue" style="--h:190">
+  <div class="caja">
+    <header class="cab" data-r><span class="n">04</span><div><p class="eti">Hasta dónde puede crecer</p><h2>Todo lo que <em>se puede construir</em></h2></div></header>
+    <p class="intro" data-r>El demo es el inicio. Esto se puede agregar según lo que necesite el hospital. Lo que no está en el demo se cotiza aparte.</p>
+    <div class="cn-f" id="cnF" data-r role="group" aria-label="Filtrar por tema"></div>
+    <div class="cn-g" id="cnG"></div>
+  </div>
+</section>
+
+<section id="ley" class="seccion hue" style="--h:275">
   <div class="caja dos">
-    <header class="cab" data-r><span class="n">04</span><div><p class="eti">Según ley</p><h2>Lo que la ley pide, <em>ya resuelto</em></h2></div></header>
+    <header class="cab" data-r><span class="n">05</span><div><p class="eti">Según ley</p><h2>Lo que la ley pide, <em>ya resuelto</em></h2></div></header>
     <div>
       <ul class="puntos">
         <li data-r><b>Libros de compras y ventas</b>Salen solos de cada venta y recepción.</li>
@@ -109,20 +121,23 @@
   </div>
 </section>
 
-<section id="colores" class="seccion tinte">
-  <div class="caja dos">
-    <header class="cab" data-r><span class="n">05</span><div><p class="eti">Personalización</p><h2>Con <em>sus</em> colores</h2></div></header>
-    <div data-r>
-      <p class="intro" style="margin-top:0">Elija un tono. Cambia esta página y también el sistema.</p>
-      <div class="tonos" id="tonos"></div>
-      <label class="gusto" for="hue">A su gusto<input id="hue" type="range" min="0" max="359" step="1"></label>
+<section id="colores" class="seccion hue" style="--h:235">
+  <div class="caja">
+    <header class="cab" data-r><span class="n">06</span><div><p class="eti">Personalización</p><h2>Con <em>sus</em> colores</h2></div></header>
+    <div class="colores-g" data-r>
+      <div>
+        <p class="intro" style="margin-top:0">Toque un color y cambia todo: esta página, el sistema, el mapa y los edificios.</p>
+        <div class="tonos" id="tonos"></div>
+        <label class="gusto" for="hue">A su gusto<input id="hue" type="range" min="0" max="359" step="1"></label>
+      </div>
+      <figure class="muestra" id="muestra" data-w="1180" data-h="760"><div class="pant-f"><iframe title="El sistema con los colores elegidos" data-src="index.html?marco=1&u=u1#/mapa" tabindex="-1"></iframe></div></figure>
     </div>
   </div>
 </section>
 
-<section id="inversion" class="seccion">
+<section id="inversion" class="seccion hue" style="--h:55">
   <div class="caja">
-    <header class="cab" data-r><span class="n">06</span><div><p class="eti">Inversión</p><h2>Dos formas de <em>tenerlo</em></h2></div></header>
+    <header class="cab" data-r><span class="n">07</span><div><p class="eti">Inversión</p><h2>Dos formas de <em>tenerlo</em></h2></div></header>
     <div class="plan" data-r>
       <div class="plan-sel">
         <div class="seg" role="group" aria-label="Forma de pago"><i id="pill"></i><button id="sMen" aria-pressed="true">Pago mensual</button><button id="sCom" aria-pressed="false">Compra única</button></div>
@@ -148,14 +163,14 @@
   </div>
 </section>
 
-<section id="pasos" class="seccion tinte">
+<section id="pasos" class="seccion hue" style="--h:200">
   <div class="caja dos">
-    <header class="cab" data-r><span class="n">07</span><div><p class="eti">Cómo seguimos</p><h2>Unas <em>13 semanas</em></h2><p class="intro" style="font-size:1rem">A confirmar después del levantamiento.</p></div></header>
+    <header class="cab" data-r><span class="n">08</span><div><p class="eti">Cómo seguimos</p><h2>De <em>4 a 6 semanas</em></h2><p class="intro" style="font-size:1rem">Integrado completo, con un máximo de 8 semanas.</p></div></header>
     <ol class="tiempo" id="tiempo">
       <li data-r><b>Revisión del demo</b>Las áreas lo recorren y dicen qué falta y qué se hace distinto.</li>
-      <li data-r><b>Levantamiento · 2 semanas</b>Procesos reales, catálogos, roles, precios y criterios fiscales.</li>
-      <li data-r><b>Desarrollo · 8 semanas</b>Primero farmacia e inventario. Después compras, cuenta del paciente y caja.</li>
-      <li data-r><b>Arranque · 3 semanas</b>Saldos iniciales, capacitación por rol y operación en paralelo.</li>
+      <li data-r><b>Levantamiento · 1 semana</b>Procesos reales, catálogos, roles, precios y criterios fiscales.</li>
+      <li data-r><b>Desarrollo · 2 a 4 semanas</b>Se personaliza sobre lo que ya funciona en el demo: farmacia, inventario, compras, cuenta del paciente y caja.</li>
+      <li data-r><b>Arranque · 1 semana</b>Saldos iniciales, capacitación por puesto y primeros días acompañados.</li>
     </ol>
   </div>
 </section>
@@ -187,6 +202,8 @@
   </div>
   <p>Antes de implementar se confirman las reformas vigentes y el trato de IVA de las medicinas no genéricas con la SAT y el asesor del Patronato.</p>
 </dialog>
+<script src="js/iconos.js"></script>
+<script src="js/dibujos.js"></script>
 <script src="js/propuesta.js"></script>
 </body>
 </html>

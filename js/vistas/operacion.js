@@ -2,7 +2,7 @@
 (function (g) {
   const { U, App: A, Motor: M, Catalogo: C, Docs } = g; const e = U.esc, Q = U.Q;
   const db = () => M.db;
-  const cab = (t, p, acc = '') => `<div class="cabeza"><div class="txt"><h1>${e(t)}</h1>${p ? `<p>${e(p)}</p>` : ''}</div>${acc ? `<div class="acciones">${acc}</div>` : ''}</div>`;
+  const cab = (t, p, acc = '') => `<div class="cabeza"><i class="tile">${U.ic((A.MENU[location.hash.replace('#/', '').split('/')[0]] || A.MENU.inicio)[1])}</i><div class="txt"><h1>${e(t)}</h1>${p ? `<p>${e(p)}</p>` : ''}</div>${acc ? `<div class="acciones">${acc}</div>` : ''}</div>`;
   A.cab = cab;
   const pacDe = c => db().ix.pac.get(c.pac);
   const desdeHoy = () => { const h = A.hoy(), a = db().dtes; let i = a.length; while (i > 0 && a[i - 1].f >= h) i--; return a.slice(i); };
@@ -35,7 +35,7 @@
   }
   const vivoHtml = () => {
     const b = db().bitacora; const ult = b.slice(-14).reverse();
-    return `<ul class="vivo" aria-live="off">${ult.map(x => { const d = (x.disp || '').split(' · '); const i = d[0] === 'Tablet' ? 'tablet' : d[0] === 'Teléfono' ? 'smartphone' : 'monitor'; return `<li class="${x.ok ? '' : 'mal'}">${U.ic(i)}<span>${e(x.txt)}<small>${e(A.nomU(x.u))} · ${e(d[1] || '')}</small></span><time>${U.hora(x.ts)}</time></li>`; }).join('')}</ul>`;
+    return `<ul class="vivo" aria-live="off">${ult.map(x => { const d = (x.disp || '').split(' · '); return `<li class="${x.ok ? '' : 'mal'}" title="${e(x.disp || '')}">${A.av(x.u, 30)}<span>${e(x.txt)}<small>${e(A.nomU(x.u))} · ${e(d[0] || '')}</small></span><time>${U.hora(x.ts)}</time></li>`; }).join('')}</ul>`;
   };
   A.vivoHtml = vivoHtml; A.pendientesRol = pendientesRol; A.desdeHoy = desdeHoy;
   A.vistas.inicio = {
@@ -44,7 +44,7 @@
       const d = db(), hoy = A.hoy(), r = M.sesion.rol, dtes = desdeHoy();
       const ing = dtes.filter(x => x.estado === 'vigente').reduce((a, x) => a + x.total, 0);
       const cuentasHoy = (() => { let n = 0; for (let i = d.cuentas.length - 1; i >= 0 && d.cuentas[i].abierta >= hoy; i--) n++; return n; })();
-      const pend = pendientesRol(); const nombre = M.sesion.nombre.split(' ').slice(0, 2).join(' ');
+      const pend = pendientesRol();
       const valor = d.productos.reduce((a, p) => a + p.valor, 0);
       const pagar = d.cxp.filter(x => x.estado === 'pendiente').reduce((a, x) => a + x.aPagar, 0);
       const cifras = r === 'direccion' || r === 'contabilidad' || r === 'auditoria'
@@ -63,10 +63,10 @@
         graf = `<section class="seccion"><h2>Ingresos de los últimos 30 días</h2>${U.barras(datos, { alt: 'Ingresos por día de los últimos 30 días' })}</section>
           <section class="seccion"><h2>Por área</h2>${orden.map(([a, v]) => `<div class="area"><span>${e(a)}</span><span class="num">${Q(v)}</span><i><u style="width:${(v / max * 100).toFixed(1)}%"></u></i></div>`).join('')}</section>`;
       }
-      return `${cab(`Buenos días, ${nombre}`.replace('Buenos días', new Date().getHours() < 12 ? 'Buenos días' : new Date().getHours() < 18 ? 'Buenas tardes' : 'Buenas noches'), `${[...new Set([A.rol().nombre, M.sesion.disp.split(' · ').slice(-1)[0]])].join(' · ')} · ${U.fecha(Date.now())}`)}
+      return `${cab(M.sesion.nombre, `${new Date().getHours() < 12 ? 'Buenos días' : new Date().getHours() < 18 ? 'Buenas tardes' : 'Buenas noches'}. Hoy es ${U.fecha(Date.now())}.`).replace(/<i class="tile">.*?<\/i>/, Dibujo.avatar(M.sesion.rol, 56))}
         <div class="cifras">${cifras.map(([a, b, c]) => `<div class="cifra"><span>${e(a)}</span><b>${e(b)}</b>${c ? `<small>${e(c)}</small>` : ''}</div>`).join('')}</div>
         <div class="dos"><div>
-          <section class="seccion"><h2>Qué falta</h2>${pend.length ? `<div class="pend">${pend.map(p => `<a class="fila-pend ${p.nivel}" href="${p.ir}"><b>${U.n(p.n)}</b><span class="q">${e(p.t)}<span>${e(p.s)}</span></span>${U.ic('chevron-right')}</a>`).join('')}</div>` : `<div class="nota bien">${U.ic('circle-check')}<span>Todo al día en su área.</span></div>`}</section>
+          <section class="seccion"><h2>Qué falta</h2>${pend.length ? `<div class="pend">${pend.map(p => `<a class="fila-pend ${p.nivel}" href="${p.ir}" style="--a:${A.hue(p.ir)}"><b>${U.n(p.n)}</b><span class="q">${e(p.t)}<span>${e(p.s)}</span></span>${U.ic('chevron-right')}</a>`).join('')}</div>` : `<div class="nota bien">${U.ic('circle-check')}<span>Todo al día en su área.</span></div>`}</section>
           ${graf}</div>
           <aside class="seccion"><h2>Movimiento en vivo</h2>${vivoHtml()}</aside></div>`;
     },
@@ -124,6 +124,7 @@
     return `<p class="peq" style="margin-bottom:8px"><a href="#/cuentas">Cuentas</a></p>
       ${cab(c.num, '', sec + pri)}
       ${dNota}
+      ${U.flujo(['Abierta', 'Con cargos', 'Cobrada'], c.estado === 'pagada' ? 3 : lineas.length ? 1 : 0)}
       <div class="ficha"><div><span>Paciente</span><b><a href="#" data-a="pac" data-id="${p.id}">${e(p.nombre)}</a></b></div><div><span>Expediente</span><b>${e(p.exp)}</b></div><div><span>Atención</span><b>${e(C.TIPOS_CUENTA[c.tipo].nombre)}${c.cama ? ' · ' + e(c.cama) : ''}</b></div><div><span>Médico</span><b>${e(c.medico || '—')}</b></div><div><span>Abierta</span><b>${U.fh(c.abierta)}</b></div><div><span>Estado</span><b>${A.etEstado(c.estado)}</b></div></div>
       ${U.tabla({ contar: false, por: 200, filas: lineas, vacioT: 'Cuenta sin cargos', vacio: 'Agregue el primer servicio o producto.', cols: [{ t: 'Detalle', h: k => `${e(k.nombre)}<span class="t-sub">${k.partes ? 'Lote ' + k.partes.map(x => e(db().ix.lote.get(x.lote).num)).join(', ') + ' · ' + e(M.nomBod(db(), k.bod)) : 'Servicio'}</span>` }, { t: 'Hora', h: k => U.hora(k.f) }, { t: 'Registró', h: k => e(A.nomU(k.us)) }, { t: 'Cant.', der: 1, h: k => U.n(k.cant) }, { t: 'Precio', der: 1, h: k => Q(k.precio) }, { t: 'Total', der: 1, h: k => Q(k.total) }, { t: '', der: 1, h: k => abierta && !k.rev && k.cant > 0 && (A.puede('cuenta.cargo.producto') || A.puede('cuenta.cargo.servicio')) ? `<button class="ojo" data-a="devolver" data-id="${k.id}" aria-label="Devolver línea" title="Devolver">${U.ic('undo-2')}</button>` : '' }] })}
       <div class="totales"><div><span>Subtotal</span><span>${Q(c.total)}</span></div>${c.desc && c.desc.estado === 'aprobado' ? `<div><span>Descuento social ${c.desc.pct} %</span><span>-${Q(c.total - neto)}</span></div>` : ''}<div class="gran"><span>Total</span><span>${Q(neto)}</span></div></div>`;

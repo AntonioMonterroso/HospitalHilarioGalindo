@@ -31,6 +31,14 @@ const PRECIOS = {
     h.setAttribute('aria-label', h.textContent); envolver(h);
   })();
 
+  /* Mosaico de la portada: las seis áreas con su color */
+  const AREAS = [['Compras', 85, 'shopping-cart'], ['Bodega', 55, 'boxes'], ['Farmacia', 155, 'pill'], ['Paciente', 350, 'stethoscope'], ['Caja', 245, 'wallet'], ['Libros', 285, 'book-open-check']];
+  const EDIF_A = ['of', 'bc', 'fx', 'en', 'ad', 'of'];
+  const pintarMosaico = () => { $('#mosaico').innerHTML = AREAS.map(([t, h], k) => `<div class="mz ver" data-r style="--m:${h};--i:${k + 4}">${Dibujo.edificio(EDIF_A[k], h)}${t}</div>`).join(''); };
+  pintarMosaico();
+  const pintarEtapas = () => $$('.etapa').forEach((et, k) => { let c = $('.e-ed', et); if (!c) { c = document.createElement('div'); c.className = 'e-ed'; c.setAttribute('aria-hidden', 'true'); $('.txt', et).after(c); } c.innerHTML = Dibujo.edificio(EDIF_A[k], AREAS[k][1]); });
+  pintarEtapas();
+
   /* Línea de pulso: el motivo de toda la propuesta */
   function latido(x, y, a = 1) { return `L${x - 34} ${y} l10 ${-12 * a} l9 ${12 * a} l6 ${14 * a} l9 ${-92 * a} l10 ${118 * a} l8 ${-40 * a} `; }
   (function () {
@@ -75,6 +83,7 @@ const PRECIOS = {
     const e = mov > .5 ? Math.min(n - 1, s + 1) : s;
     if (e !== actual) {
       actual = e;
+      viaje.style.setProperty('--e', AREAS[e][1]);
       etapas.forEach((t, i) => { t.classList.toggle('activa', i === e); t.classList.toggle('pasada', i < e); });
       nodos.forEach((t, i) => t.classList.toggle('paso', i <= e));
       figs.vial.classList.toggle('on', e <= 3); figs.recibo.classList.toggle('on', e === 4); figs.libro.classList.toggle('on', e === 5);
@@ -100,10 +109,11 @@ const PRECIOS = {
   addEventListener('resize', () => { kF = escalaFicha(); actual = -1; alBajar(); ajustar(); });
 
   /* Aparatos en vivo */
-  const figuras = $$('#aparatos figure');
+  const figuras = [...$$('#aparatos figure'), $('#muestra')];
   function ajustar() { figuras.forEach(f => { const p = $('.pant-f', f), i = $('iframe', f), w = +f.dataset.w, h = +f.dataset.h; const k = p.clientWidth / w; i.width = w; i.height = h; i.style.transform = `scale(${k})`; p.style.height = h * k + 'px'; }); }
   ajustar();
-  new IntersectionObserver((es, o) => es.forEach(x => { if (x.isIntersecting) { o.disconnect(); figuras.forEach(f => { if (f.offsetParent) { const i = $('iframe', f); i.src = i.dataset.src; } }); ajustar(); } }), { rootMargin: '400px' }).observe($('#aparatos'));
+  const montar = fs => new IntersectionObserver((es, o) => es.forEach(x => { if (x.isIntersecting) { o.disconnect(); fs.forEach(f => { if (f.offsetParent) { const i = $('iframe', f); i.src = i.dataset.src; } }); ajustar(); } }), { rootMargin: '400px' });
+  montar($$('#aparatos figure')).observe($('#aparatos')); montar([$('#muestra')]).observe($('#muestra'));
 
   /* Simulador: carga el motor solo cuando se pide */
   const cargar = s => new Promise((ok, mal) => { const e = document.createElement('script'); e.src = s; e.onload = ok; e.onerror = mal; document.head.append(e); });
@@ -140,10 +150,12 @@ const PRECIOS = {
     ['Cuenta del paciente', 'Consulta, quirófano y encamamiento cargan a una sola cuenta. Caja cobra una vez.', 'u3', 'caja'],
     ['Mapa del hospital', 'Camas, quirófanos, farmacia y bodegas con su estado en vivo.', 'u1', 'mapa'],
     ['Rastreo de lote', 'De qué proveedor vino, por dónde pasó y qué pacientes lo recibieron. Si hay alerta, se bloquea en todos los dispositivos.', 'u5', 'inventario/rastreo'],
-    ['Inventario', 'Seis bodegas, kárdex con costo promedio, traslados con confirmación y conteo a ciegas desde el teléfono.', 'u8', 'inventario'],
+    ['Ingreso de mercadería', 'Cuatro pasos, siempre iguales. Con factura en mano, XML, Excel, orden de compra o donación.', 'u8', 'inventario/ingreso'],
+    ['Inventario', 'Seis bodegas, kárdex con costo promedio, traslados con confirmación y conteo a ciegas desde el teléfono.', 'u8', 'inventario/existencias'],
     ['Compras', 'Del pedido del área a la orden, la aprobación por monto, la recepción, la retención y el pago.', 'u9', 'compras'],
     ['Trabajo social', 'Descuentos con estudio socioeconómico. La Junta sabe cuánta ayuda se dio y a cuántas personas.', 'u11', 'social'],
     ['Tablero de Dirección', 'Dinero del día, faltantes, vencimientos y lo que necesita decisión, de un vistazo.', 'u1', 'inicio'],
+    ['Reglas y permisos', 'El hospital decide quién aprueba, desde qué monto y qué puede hacer cada puesto.', 'u1', 'config/reglas'],
     ['Contabilidad', 'Libros, retenciones, inventario valorado, partida diaria, donaciones y fondos públicos.', 'u10', 'ley'],
   ];
   $('#mods').innerHTML = MODS.map(([t, d, u, r], i) => `<div class="mod" ${i ? '' : 'data-abierto'}><button aria-expanded="${!i}">${t}<i></i></button><div class="cuerpo"><div><p>${d}</p><a href="index.html?u=${u}#/${r}">Verlo en el demo</a></div></div></div>`).join('');
@@ -154,22 +166,34 @@ const PRECIOS = {
     if (!abierto) { m.setAttribute('data-abierto', ''); b.setAttribute('aria-expanded', 'true'); }
   });
 
-  /* Roles */
+  /* Puestos: todos a la vista */
   const ROLES = [
-    ['Dirección', 'Ve todo, aprueba las compras grandes y decide con el tablero.', 'u1'], ['Admisión', 'Registra pacientes y abre sus cuentas.', 'u2'], ['Caja', 'Cobra las cuentas y cierra su turno con arqueo.', 'u3'],
-    ['Farmacia', 'Vende y cobra en mostrador, despacha pedidos y lleva los controlados.', 'u5'], ['Enfermería', 'Pide a farmacia desde la tablet, junto al paciente.', 'u6'], ['Quirófano', 'Registra lo que usa cada cirugía.', 'u7'],
-    ['Bodega central', 'Recibe, traslada y cuenta desde el teléfono.', 'u8'], ['Compras', 'Convierte solicitudes en órdenes.', 'u9'], ['Contabilidad', 'Libros, retenciones y pagos a proveedores.', 'u10'], ['Trabajo social', 'Resuelve los descuentos por estudio socioeconómico.', 'u11'], ['Auditoría interna', 'Lee todo y no cambia nada.', 'u12'],
+    ['Dirección general', 'Ve todo, aprueba las compras grandes y decide con el tablero.', 'direccion', 'u1'], ['Admisión', 'Registra pacientes y abre sus cuentas.', 'admision', 'u2'], ['Caja', 'Cobra las cuentas y cierra su turno con arqueo.', 'caja', 'u3'],
+    ['Regente de farmacia', 'Vende y cobra en mostrador, despacha pedidos y lleva los controlados.', 'farmacia', 'u5'], ['Enfermería de sala', 'Pide a farmacia desde la tablet, junto al paciente.', 'enfermeria', 'u6'], ['Enfermería de quirófano', 'Registra lo que usa cada cirugía.', 'quirofano', 'u7'],
+    ['Encargado de bodega', 'Ingresa mercadería, traslada y cuenta desde el teléfono.', 'bodega', 'u8'], ['Encargado de compras', 'Convierte las solicitudes en órdenes de compra.', 'compras', 'u9'], ['Contador general', 'Libros, retenciones y pagos a proveedores.', 'contabilidad', 'u10'], ['Trabajo social', 'Resuelve los descuentos por estudio socioeconómico.', 'social', 'u11'], ['Auditor interno', 'Lee todo y no cambia nada.', 'auditoria', 'u12'],
   ];
-  const chips = $('#chips'), rol = $('#rol');
-  chips.innerHTML = ROLES.map((r, i) => `<button role="tab" aria-selected="${!i}" data-i="${i}">${r[0]}</button>`).join('');
-  function verRol(i) {
-    const [t, d, u] = ROLES[i];
-    $$('button', chips).forEach((b, k) => b.setAttribute('aria-selected', k === i));
-    rol.innerHTML = `<h3>${t}</h3><p>${d}</p><a href="index.html?u=${u}">Entrar como ${t}</a>`;
-    rol.classList.remove('cambia'); void rol.offsetWidth; rol.classList.add('cambia');
+  const pintarRoles = () => { $('#rolG').innerHTML = ROLES.map(([t, d, r, u]) => `<a class="rol-c" href="index.html?u=${u}">${Dibujo.avatar(r, 52)}<div><b>${t}</b><span>${d}</span></div></a>`).join(''); };
+  pintarRoles();
+
+  /* Todo lo que se puede construir */
+  const YA = 'En el demo', MAS = 'Se puede agregar';
+  const CONSTRUIR = {
+    'Atención': [['Cuenta del paciente', 'Todo lo que consume en una sola cuenta.', YA], ['Citas y agenda médica', 'Agenda por médico, con recordatorio por WhatsApp.', MAS], ['Expediente clínico', 'Historia, evolución y diagnósticos del paciente.', MAS], ['Recetas digitales', 'El médico receta y farmacia la ve al momento.', MAS], ['Órdenes y resultados', 'Laboratorio e imagen con resultados en línea.', MAS], ['Turnos en pantalla', 'Sala de espera con llamado en TV.', MAS], ['Portal del paciente', 'Citas, resultados y pagos desde el teléfono.', MAS]],
+    'Quirófano y salas': [['Consumo por cirugía', 'Lo usado se carga a la cuenta.', YA], ['Mapa de camas', 'Ocupación en vivo.', YA], ['Programación de quirófanos', 'Calendario de salas, equipos y cirujanos.', MAS], ['Kits por cirugía', 'Lista de insumos lista según procedimiento.', MAS], ['Jornadas quirúrgicas', 'Equipos visitantes, donaciones y consumo por jornada.', MAS], ['Consentimientos en tablet', 'Firma del paciente sin papel.', MAS], ['Dietas y lavandería', 'Control de alimentación y ropa hospitalaria.', MAS]],
+    'Farmacia e inventario': [['Mostrador de venta', 'Escanear, cobrar y bajar del inventario.', YA], ['Lotes y vencimientos', 'Sale primero lo que vence primero.', YA], ['Rastreo y bloqueo de lotes', 'A qué pacientes llegó cada lote.', YA], ['Control de sustancias', 'Receta y balance mensual.', YA], ['Etiquetas propias', 'Impresión de códigos de barras.', MAS], ['Reposición automática', 'Sugiere qué pedir según el consumo.', MAS], ['Cadena de frío', 'Sensores y alertas de temperatura.', MAS], ['Activos y mantenimiento', 'Equipo médico, depreciación y servicios.', MAS]],
+    'Compras': [['Órdenes y aprobaciones', 'Por monto y por puesto.', YA], ['Ingreso por XML y Excel', 'Sin digitar la factura.', YA], ['Cotizaciones', 'Comparar precios entre proveedores.', MAS], ['Portal de proveedores', 'Órdenes y pagos en línea.', MAS], ['Presupuesto por área', 'Lo gastado contra lo aprobado.', MAS]],
+    'Finanzas y ley': [['Libros y retenciones', 'Compras, ventas e ISR.', YA], ['Factura con certificador', 'Opcional, automática desde la venta.', MAS], ['Contabilidad completa', 'Catálogo, balances y estados financieros.', MAS], ['Bancos y conciliación', 'Cheques, depósitos y estados de cuenta.', MAS], ['Planilla e IGSS', 'Nómina, prestaciones y descuentos.', MAS], ['Aseguradoras', 'Cuentas por cobrar y reclamos.', MAS]],
+    'Patronato': [['Ayuda social', 'Descuentos con su estudio.', YA], ['Fondos públicos y donaciones', 'Separados, con NOG y recibo.', YA], ['Donantes y proyectos', 'Seguimiento de cada aporte.', MAS], ['Informes para la Junta', 'Reportes mensuales listos.', MAS], ['Informes a Salud y Contraloría', 'Formatos que pidan las instituciones.', MAS]],
+    'Tecnología': [['Varios dispositivos a la vez', 'Computadora, tablet y teléfono.', YA], ['Bitácora completa', 'Quién, cuándo y desde dónde.', YA], ['Modo sin internet', 'Sigue vendiendo y sincroniza después.', MAS], ['Aplicación para teléfono', 'Instalable, con avisos.', MAS], ['Firma electrónica', 'Aprobaciones y documentos.', MAS], ['Asistente con inteligencia artificial', 'Preguntas sobre los datos en lenguaje normal.', MAS]],
+  };
+  let cnSel = 'Todo';
+  function pintarCn() {
+    $('#cnF').innerHTML = ['Todo', ...Object.keys(CONSTRUIR)].map(k => `<button data-k="${k}" aria-pressed="${k === cnSel}">${k}</button>`).join('');
+    const l = cnSel === 'Todo' ? Object.values(CONSTRUIR).flat() : CONSTRUIR[cnSel];
+    $('#cnG').innerHTML = l.map(([t, d, e2], i) => `<div class="cn" style="--i:${Math.min(i, 14)}"><b>${t}</b><span>${d}</span><em class="${e2 === YA ? 'ya' : ''}">${e2}</em></div>`).join('');
   }
-  chips.addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) verRol(+b.dataset.i); });
-  verRol(0);
+  $('#cnF').addEventListener('click', ev => { const b = ev.target.closest('button'); if (b) { cnSel = b.dataset.k; pintarCn(); } });
+  pintarCn();
 
   /* Ley */
   const dlg = $('#detalle');
@@ -177,19 +201,20 @@ const PRECIOS = {
   $('#cerrarLey').onclick = () => dlg.close();
   dlg.addEventListener('click', ev => { if (ev.target === dlg) dlg.close(); });
 
-  /* Colores: el tono nuevo se abre desde donde se tocó */
+  /* Colores: el tono nuevo se abre desde donde se tocó, y cambia todo */
   const tonos = $('#tonos'), hue = $('#hue');
-  tonos.innerHTML = Object.values(Tema.TONOS).map(t => `<button class="sw" data-h="${t.h}" style="--t:${t.h}" aria-pressed="false"><i></i>${esc(t.nombre)}</button>`).join('');
-  const marcar = () => { const h = Tema.actual(); $$('.sw', tonos).forEach(b => b.setAttribute('aria-pressed', +b.dataset.h === h)); hue.value = h; };
+  tonos.innerHTML = `<button class="sw" data-h="areas" aria-pressed="false"><i class="multi"></i>Por áreas</button>` + Object.values(Tema.TONOS).map(t => `<button class="sw" data-h="${t.h}" style="--t:${t.h}" aria-pressed="false"><i></i>${esc(t.nombre)}</button>`).join('');
+  const marcar = () => { const h = Tema.fijo(); $$('.sw', tonos).forEach(b => b.setAttribute('aria-pressed', b.dataset.h === 'areas' ? h == null : +b.dataset.h === h)); hue.value = h == null ? 235 : h; };
   function cambiar(h, x, y) {
     if (!document.startViewTransition || quieto) { Tema.guardar(h); return marcar(); }
     const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
     const t = document.startViewTransition(() => { Tema.guardar(h); marcar(); });
     t.ready.then(() => document.documentElement.animate({ clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] }, { duration: 700, easing: 'cubic-bezier(0.77, 0, 0.175, 1)', pseudoElement: '::view-transition-new(root)' }));
   }
-  tonos.addEventListener('click', ev => { const b = ev.target.closest('.sw'); if (b) cambiar(+b.dataset.h, ev.clientX, ev.clientY); });
+  tonos.addEventListener('click', ev => { const b = ev.target.closest('.sw'); if (b) cambiar(b.dataset.h === 'areas' ? null : +b.dataset.h, ev.clientX, ev.clientY); });
   hue.addEventListener('input', () => { Tema.guardar(+hue.value); marcar(); });
   marcar();
+  addEventListener('tema', () => { pintarMosaico(); pintarEtapas(); pintarRoles(); });
 
   /* Inversión */
   const INCLUYE = {

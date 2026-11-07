@@ -128,21 +128,24 @@
       let f = db().bitacora.slice().reverse(); if (u) f = f.filter(x => x.u === u); if (st.soloMal) f = f.filter(x => !x.ok); if (q) f = f.filter(x => U.norm(x.txt).includes(q));
       return `${A.cab('Bitácora', 'Nada se borra. Cada acción queda con usuario, dispositivo y hora, incluso las que el sistema detuvo.')}
         <div class="filtros">${U.busca('bb', st.bb, 'Buscar en la bitácora')}<select id="bu" data-filtro="bu" aria-label="Usuario" style="width:auto"><option value="">Todos los usuarios</option>${db().usuarios.map(x => `<option value="${x.id}" ${x.id === u ? 'selected' : ''}>${e(x.nombre)}</option>`).join('')}</select><button class="chip" data-a="mal" aria-pressed="${!!st.soloMal}">Solo rechazadas</button></div>
-        ${U.tabla({ filas: f, pag: st.pag_t, por: 30, vacioT: 'Sin registros', vacio: 'Haga algo en el sistema y aparecerá aquí.', cols: [{ t: 'Acción', h: x => `${x.ok ? '' : U.et('Rechazada', 'alerta') + ' '}${e(x.txt)}` }, { t: 'Usuario', h: x => e(A.nomU(x.u)) }, { t: 'Dispositivo', h: x => e(x.disp || '—') }, { t: 'Hora', h: x => U.fh(x.ts) }] })}`;
+        ${U.tabla({ filas: f, pag: st.pag_t, por: 30, vacioT: 'Sin registros', vacio: 'Haga algo en el sistema y aparecerá aquí.', cols: [{ t: 'Acción', h: x => `${x.ok ? '' : U.et('Rechazada', 'alerta') + ' '}${e(x.txt)}` }, { t: 'Puesto', h: x => `<span class="con-av">${A.av(x.u, 28)}${e(A.nomU(x.u))}</span>` }, { t: 'Dispositivo', h: x => e(x.disp || '—') }, { t: 'Hora', h: x => U.fh(x.ts) }] })}`;
     },
     acc: { mal() { A.st.bitacora.soloMal = !A.st.bitacora.soloMal; A.repintar(); } },
   };
 
   /* ---------- usuarios ---------- */
-  const PERMISOS = [['paciente', 'Registrar pacientes'], ['cuenta.cargo.servicio', 'Cargar servicios'], ['cuenta.cargo.producto', 'Cargar productos'], ['cuenta.facturar', 'Cobrar y facturar'], ['nota.credito', 'Anular y nota de crédito'], ['descuento.resolver', 'Autorizar descuento social'], ['farmacia', 'Despachar farmacia'], ['inv.enviar', 'Enviar traslados'], ['inv.ajuste', 'Pedir ajustes'], ['ajuste.aprobar', 'Aprobar ajustes'], ['inv.baja', 'Dar de baja'], ['compras.oc', 'Crear órdenes'], ['oc.aprobar', 'Aprobar órdenes'], ['compras.recibir', 'Recibir compras'], ['compras.pagar', 'Pagar proveedores'], ['config', 'Configurar el sistema']];
+  const PERMISOS = A.PERMISOS = [['inv.ingreso', 'Ingresar mercadería'], ['lote.bloquear', 'Bloquear lotes'], ['paciente', 'Registrar pacientes'], ['cuenta.cargo.servicio', 'Cargar servicios'], ['cuenta.cargo.producto', 'Cargar productos'], ['cuenta.facturar', 'Cobrar y facturar'], ['nota.credito', 'Anular y nota de crédito'], ['descuento.resolver', 'Autorizar descuento social'], ['farmacia', 'Despachar farmacia'], ['inv.enviar', 'Enviar traslados'], ['inv.ajuste', 'Pedir ajustes'], ['ajuste.aprobar', 'Aprobar ajustes'], ['inv.baja', 'Dar de baja'], ['compras.oc', 'Crear órdenes'], ['oc.aprobar', 'Aprobar órdenes'], ['compras.recibir', 'Recibir compras'], ['compras.pagar', 'Pagar proveedores'], ['config', 'Configurar el sistema']];
   A.vistas.usuarios = {
     html() {
       const roles = Object.entries(C.ROLES);
-      return `${A.cab('Usuarios', 'Cada persona tiene un rol. El rol decide qué ve y qué puede hacer.')}
-        <section class="seccion">${U.tabla({ contar: false, filas: db().usuarios, cols: [{ t: 'Usuario', h: u => `${e(u.nombre)}<span class="t-sub">${e(u.disp)}</span>` }, { t: 'Rol', h: u => e(C.ROLES[u.rol].nombre) }, { t: 'Estado', h: u => u.activo ? U.et('Activo', 'bien') : U.et('Inactivo') }, { t: '', der: 1, h: u => U.lapiz('editar', u.id) }] })}</section>
+      return `${A.cab('Usuarios', 'Cada persona tiene un rol. El rol decide qué ve y qué puede hacer.', `<button class="btn pri" data-a="nuevo">${U.ic('plus')}Nuevo usuario</button>`)}
+        <section class="seccion">${U.tabla({ contar: false, filas: db().usuarios, cols: [{ t: 'Puesto', h: u => `<span class="con-av">${Dibujo.avatar(u.rol, 36)}<span>${e(u.nombre)}<span class="t-sub">${e(u.disp)}</span></span></span>` }, { t: 'Rol', h: u => e(C.ROLES[u.rol].nombre) }, { t: 'Estado', h: u => u.activo ? U.et('Activo', 'bien') : U.et('Inactivo') }, { t: '', der: 1, h: u => U.lapiz('editar', u.id) }] })}</section>
         <section class="seccion"><h2>Quién puede qué</h2>${U.tabla({ contar: false, por: 40, filas: PERMISOS, id: r => r[0], cols: [{ t: 'Permiso', h: r => e(r[1]) }, { t: 'Lo tienen', h: r => roles.filter(([, x]) => x.acciones.includes(r[0])).map(([, x]) => U.et(x.nombre, 'pino')).join(' ') || U.et('Nadie') }] })}</section>`;
     },
     acc: {
+      nuevo() {
+        const h = U.hoja({ titulo: 'Nuevo usuario', ancho: 460, cuerpo: `<div class="campo"><label for="n">Nombre</label><input id="n" type="text"></div><div class="rejilla"><div class="campo"><label for="r">Rol</label><select id="r">${Object.entries(C.ROLES).map(([k, x]) => `<option value="${k}">${e(x.nombre)}</option>`).join('')}</select></div><div class="campo"><label for="p">PIN de 4 números</label><input id="p" type="text" inputmode="numeric" maxlength="4"></div></div>`, pie: `<button class="btn" data-cerrar>Cancelar</button><button class="btn pri" data-a="ok">Crear usuario</button>`, acciones: { async ok() { const q = s => h.cuerpo.querySelector(s).value.trim(); const r = await U.hacer('usuario.crear', { nombre: q('#n'), rol: q('#r'), pin: q('#p') }, true); if (r.ok) h.cerrar(); } } });
+      },
       editar(id) {
         const u = db().ix.usr.get(id);
         const h = U.hoja({ titulo: 'Editar usuario', sub: u.nombre, ancho: 440, cuerpo: `<div class="campo"><label for="r">Rol</label><select id="r">${Object.entries(C.ROLES).map(([k, x]) => `<option value="${k}" ${k === u.rol ? 'selected' : ''}>${e(x.nombre)}</option>`).join('')}</select></div><label class="peq"><input type="checkbox" id="ac" ${u.activo ? 'checked' : ''}> Usuario activo</label>`, pie: `<button class="btn" data-cerrar>Cancelar</button><button class="btn pri" data-a="ok">Guardar</button>`, acciones: { async ok() { const r = await U.hacer('usuario.guardar', { id, rol: h.cuerpo.querySelector('#r').value, activo: h.cuerpo.querySelector('#ac').checked }, 'Usuario actualizado.'); if (r.ok) h.cerrar(); } } });
@@ -160,11 +163,11 @@
         <div class="nota info">${U.ic('info')}<span>El certificador es opcional. Sin él, el sistema da comprobante interno y la factura legal se hace en la Agencia Virtual de la SAT y se anota en la venta.</span></div>
         <h2 style="font-size:1.125rem;margin-bottom:12px">Reglas</h2><div class="ficha">${dato('IVA', c.ivaPct + ' %')}${dato('Servicios', c.serviciosExentos ? 'Exentos, asistencia social' : 'Gravados')}${dato('Método de inventario', c.metodo)}${dato('Aprobación desde', Q(c.limiteAprobacion))}${dato('Alerta de vencimiento', c.diasVence + ' días')}${dato('Retención ISR', c.retISR ? 'Activa' : 'Inactiva')}${dato('Retención IVA', c.retIVA ? 'Activa' : 'No calificado por SAT')}</div>
         <div class="nota">${U.ic('triangle-alert')}<span>Por confirmar con SAT antes de implementar: si los servicios del hospital entran en la exención de asistencia social (Decreto 27-92, Art. 7 num. 13) y el trato de IVA de la venta de medicinas no genéricas.</span></div>
-        <section class="seccion"><h2>Colores del sistema</h2><div class="tonos">${Object.entries(Tema.TONOS).map(([k, t]) => `<button class="tono" data-a="tono" data-id="${t.h}" style="--t:${t.h}" aria-pressed="${Tema.actual() === t.h}"><i></i>${e(t.nombre)}</button>`).join('')}</div></section>
-        <section class="seccion"><h2>Demostración</h2><p class="mudo" style="margin-bottom:12px">Borra todo lo que se hizo en el demo y vuelve a los datos de ejemplo.</p><button class="btn" data-a="reiniciar">${U.ic('refresh-cw')}Reiniciar el demo</button></section>`;
+        <section class="seccion"><h2>Colores del sistema</h2><p class="mudo" style="margin-bottom:12px">Cambia todo el diseño: menú, pantallas, botones, mapa y edificios.</p><div class="tonos"><button class="tono" data-a="tono" data-id="areas" aria-pressed="${Tema.fijo() == null}"><i class="multi"></i>Un color por área</button>${Object.entries(Tema.TONOS).map(([k, t]) => `<button class="tono" data-a="tono" data-id="${t.h}" style="--t:${t.h}" aria-pressed="${Tema.fijo() === t.h}"><i></i>${e(t.nombre)}</button>`).join('')}</div></section>
+`;
     },
     acc: {
-      tono(h) { Tema.guardar(+h); A.repintar(); },
+      tono(h) { Tema.guardar(h === 'areas' ? null : +h); },
       editar() {
         const c = db().cfg;
         const h = U.hoja({

@@ -10,6 +10,10 @@
     inicio: ['Inicio', 'house'], mapa: ['Mapa del hospital', 'map'], admision: ['Admisión', 'user-round'], cuentas: ['Cuentas', 'receipt'], caja: ['Caja', 'wallet'], farmacia: ['Farmacia', 'pill'], sala: ['Sala', 'stethoscope'],
     inventario: ['Inventario', 'boxes'], compras: ['Compras', 'shopping-cart'], social: ['Trabajo social', 'heart-handshake'], ley: ['Contabilidad y ley', 'book-open-check'], reportes: ['Reportes', 'chart-column'], bitacora: ['Bitácora', 'scroll-text'], usuarios: ['Usuarios', 'users'], config: ['Configuración', 'settings'],
   };
+  /* Un color por área: el mismo tono en menú, títulos, botones y mapa */
+  A.AREAS = { admision: 300, cuentas: 245, caja: 245, farmacia: 155, sala: 200, inventario: 55, compras: 85, social: 350, ley: 275, reportes: 275, bitacora: 230, usuarios: 230, config: 230 };
+  A.hue = v => { const f = Tema.fijo(); if (f != null) return f; const k = String(v || '').replace('#/', '').split(/[/?]/)[0]; return A.AREAS[k] != null ? A.AREAS[k] : Tema.actual(); };
+  A.av = (uid, t = 28) => { const u = M.db.ix.usr.get(uid); return Dibujo.avatar(u ? u.rol : '', t); };
   A.rol = () => C.ROLES[M.sesion.rol];
   A.puede = a => A.rol().acciones.includes(a);
   A.hoy = () => M.finDia(Date.now());
@@ -46,8 +50,8 @@
     document.getElementById('raiz').innerHTML = `<main class="entrada">
       <section class="entrada-izq"><div><span class="peq">${e(C.HOSPITAL.lugar)}</span><h1>Hospital<br>Hilario Galindo</h1><p>Inventario, compras y ventas en un solo registro, para todo el hospital y desde cualquier dispositivo.</p></div>
       <p class="pie">Demostración con datos de ejemplo. Ningún paciente, proveedor ni documento es real.</p></section>
-      <section class="entrada-der"><h2>¿Quién entra?</h2><p class="mudo">Cada rol ve solo lo suyo. Elija uno para recorrer el sistema.</p>
-      <div class="personas">${M.db.usuarios.map(u => `<button class="persona" data-u="${u.id}"><b>${e(u.nombre)}</b><span>${e(C.ROLES[u.rol].nombre)} · ${e(u.disp.split(' · ')[0])}</span></button>`).join('')}</div>
+      <section class="entrada-der"><h2>Elija su puesto</h2><p class="mudo">Cada puesto ve solo lo que le toca.</p>
+      ${C.PUESTOS.map(([g, l]) => `<h3 class="grupo-r">${e(g)}</h3><div class="personas">${l.map(([id, d, ic, h]) => { const u = M.db.ix.usr.get(id); return u ? `<button class="persona" data-u="${u.id}" style="--m:${h}">${Dibujo.avatar(u.rol, 46)}<span class="pq"><b>${e(u.nombre)}</b><span>${e(d)}</span></span></button>` : ''; }).join('')}</div>`).join('')}
       <p class="peq mudo" style="margin-top:24px"><a href="propuesta.html">Ver la propuesta y los precios</a></p></section></main>`;
     document.querySelectorAll('.persona').forEach(b => b.onclick = () => pedirPin(M.db.ix.usr.get(b.dataset.u)));
   }
@@ -63,24 +67,24 @@
 
   function pintarMarco() {
     const u = M.sesion, rol = A.rol();
-    const banda = A.enMarco ? '' : `<div class="banda"><span>Demostración · datos de ejemplo · documentos sin validez fiscal</span><span class="acciones solo-grande"><a href="#/dispositivos">Ver varios dispositivos a la vez</a><a href="propuesta.html">Propuesta y precios</a></span></div>`;
+    const banda = A.enMarco ? '' : `<div class="banda"><span>${M.modo === 'real' ? 'Sus datos: se guardan en este navegador' : 'Demostración con datos de ejemplo'}</span><span class="acciones solo-grande"><a href="#/dispositivos">Ver varios dispositivos a la vez</a><a href="propuesta.html">Propuesta y precios</a></span></div>`;
     document.getElementById('raiz').innerHTML = `${banda}<div class="app"><aside class="lateral"><div class="marca"><svg class="cruz" viewBox="0 0 32 32" aria-hidden="true"><path d="M12 5h8v7h7v8h-7v7h-8v-7H5v-8h7z"/></svg><b>Hilario Galindo</b><span>Patronato Pro-Salud</span></div><nav class="menu" id="menu" aria-label="Principal"></nav>
-      <div class="quien"><b>${e(u.nombre)}</b><span>${e(rol.nombre)}</span><button data-a="salir">${U.ic('log-out')}<span>Cambiar de rol</span></button></div></aside>
+      <div class="quien">${Dibujo.avatar(u.rol, 40)}<b>${e(u.nombre)}</b><span>${e(u.disp.split(' · ')[0])}</span><button data-a="salir">${U.ic('log-out')}<span>Cambiar de rol</span></button></div></aside>
       <div class="central"><header class="tope"><div class="ruta" id="ruta"></div>
         <div class="buscar-global">${U.ic('search')}<input type="search" id="global" placeholder="Paciente, producto, cuenta, factura" aria-label="Buscar en todo el sistema"></div>
-        <span class="pulso" id="pulso"><i></i><span>En línea</span></span></header>
+        <button class="btn chico" data-a="guia">${U.ic('info')}Guía</button><span class="pulso" id="pulso"><i></i><span>En línea</span></span></header>
       <main class="vista" id="vista"></main></div></div><nav class="barra-movil" id="barra" aria-label="Principal"></nav>`;
     pintarMenu();
     document.getElementById('global').addEventListener('focus', A.buscarGlobal);
   }
   function pintarMenu() {
     const v = location.hash.replace('#/', '').split('/')[0] || 'inicio', p = A.pendientes(), vs = A.rol().vistas;
-    const item = id => { const [t, i] = A.MENU[id]; return `<a href="#/${id}" ${id === v ? 'aria-current="page"' : ''}>${U.ic(i)}<span>${e(t)}</span>${p[id] ? `<span class="cuenta">${p[id]}</span>` : ''}</a>`; };
+    const item = id => { const [t, i] = A.MENU[id]; return `<a href="#/${id}" style="--m:${A.hue(id)}" ${id === v ? 'aria-current="page"' : ''}><i class="mi">${U.ic(i)}</i><span>${e(t)}</span>${p[id] ? `<span class="cuenta">${p[id]}</span>` : ''}</a>`; };
     const menu = document.getElementById('menu'); if (menu) menu.innerHTML = vs.map(item).join('');
     const b = document.getElementById('barra');
     if (b) {
       const pri = vs.slice(0, vs.length > 5 ? 4 : 5);
-      b.innerHTML = pri.map(id => { const [t, i] = A.MENU[id]; return `<a href="#/${id}" ${id === v ? 'aria-current="page"' : ''}>${U.ic(i)}<span>${e(t.split(' ')[0])}</span>${p[id] ? `<span class="cuenta">${p[id]}</span>` : ''}</a>`; }).join('') + (vs.length > 5 ? `<button data-a="mas">${U.ic('ellipsis')}<span>Más</span></button>` : '');
+      b.innerHTML = pri.map(id => { const [t, i] = A.MENU[id]; return `<a href="#/${id}" style="--m:${A.hue(id)}" ${id === v ? 'aria-current="page"' : ''}><i class="mi">${U.ic(i)}</i><span>${e(t.split(' ')[0])}</span>${p[id] ? `<span class="cuenta">${p[id]}</span>` : ''}</a>`; }).join('') + (vs.length > 5 ? `<button data-a="mas">${U.ic('ellipsis')}<span>Más</span></button>` : '');
     }
   }
   A.masMenu = function () {
@@ -98,6 +102,7 @@
     if (!vista || !A.rol().vistas.includes(id)) { location.hash = '#/inicio'; return; }
     const cambia = !actual || actual.id !== id || actual.sub !== (partes[1] || '');
     actual = { id, sub: partes[1] || '', v: vista, partes };
+    document.documentElement.style.setProperty('--a', A.hue(id));
     A.st[id] = A.st[id] || {};
     pintar(cambia);
     pintarMenu();
@@ -115,6 +120,7 @@
   }
   A.repintar = () => pintar(false);
   addEventListener('hashchange', ruta);
+  addEventListener('tema', () => { if (M.sesion && actual) { document.documentElement.style.setProperty('--a', A.hue(actual.id)); pintarMenu(); A.repintar(); } else if (M.db && !M.sesion && document.querySelector('.entrada')) pantallaEntrada(); });
 
   /* Clics y filtros con un solo escuchador */
   document.addEventListener('click', ev => {
@@ -122,11 +128,12 @@
     const a = b.dataset.a, id = b.dataset.id;
     if (a === 'salir') return A.salir();
     if (a === 'mas') return A.masMenu();
+    if (a === 'guia') return A.guias();
     if (a === 'pag') { const [n, p] = id.split('|'); A.st[actual.id]['pag_' + n] = +p; return A.repintar(); }
     const fn = actual && actual.v.acc && actual.v.acc[a];
     if (fn) { ev.preventDefault(); fn(id, b, ev); }
   });
-  document.addEventListener('keydown', ev => { if (ev.key === 'Enter' && ev.target.matches('tr.clic')) ev.target.click(); });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Enter' && ev.target.matches('tr.clic, .pin')) ev.target.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
   let tFiltro;
   document.addEventListener('input', ev => {
     const k = ev.target.dataset && ev.target.dataset.filtro; if (!k || !actual) return;

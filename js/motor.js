@@ -23,7 +23,7 @@
   function baseVacia(ancla) {
     const db = {
       ancla, ahoraSemilla: ancla,
-      cfg: { nombre: C.HOSPITAL.nombre, nit: C.HOSPITAL.nit, direccion: 'Finca San Cayetano, ' + C.HOSPITAL.lugar, ivaPct: 12, limiteAprobacion: 25000, diasVence: 90, limiteCF: 2500, metodo: 'Promedio ponderado', serie: 'HHG-A', serieInt: 'HHG-C', serieDon: 'HHG-D', doc: 'interno', retISR: true, retIVA: false, serviciosExentos: false },
+      cfg: { nombre: C.HOSPITAL.nombre, nit: C.HOSPITAL.nit, direccion: 'Finca San Cayetano, ' + C.HOSPITAL.lugar, ivaPct: 12, limiteAprobacion: 25000, diasVence: 90, limiteCF: 2500, metodo: 'Promedio ponderado', aprobarOC: true, separarFunciones: true, ajusteAprueba: true, descuentoAut: true, serie: 'HHG-A', serieInt: 'HHG-C', serieDon: 'HHG-D', doc: 'interno', retISR: true, retIVA: false, serviciosExentos: false },
       usuarios: C.USUARIOS.map(u => ({ ...u, activo: true })),
       bodegas: C.BODEGAS,
       productos: C.crearProductos(), proveedores: C.PROVEEDORES.map(p => ({ ...p })), servicios: C.SERVICIOS,
@@ -42,6 +42,8 @@
 
   /* ---------- inventario ---------- */
   function lote(db, x) {
+    const ya = (db.ix.lotesDe.get(x.prod) || []).find(k => k.num === x.num && k.vence === x.vence);
+    if (ya) return ya;
     const l = { id: 'l' + (++db.seq.lote), prod: x.prod, num: x.num, vence: x.vence, costo: x.costo, fondo: x.fondo || 'Propio', registro: x.registro || null, ex: {}, entrada: x.ts, prov: x.prov || null };
     db.lotes.push(l); db.ix.lote.set(l.id, l);
     let a = db.ix.lotesDe.get(l.prod); if (!a) db.ix.lotesDe.set(l.prod, a = []);
@@ -191,8 +193,10 @@
     let total = 0; const lineas = [];
     for (const it of d.items) {
       const p = db.ix.prod.get(it.prod);
-      const l = lote(db, { prod: p.id, num: it.lote, vence: it.vence, costo: it.costo, fondo: oc ? oc.fondo : 'Propio', registro: p.registro, ts: ctx.ts, prov: prov.id });
-      entrar(db, { prod: p.id, lote: l.id, bod: 'BC', cant: it.cant, costo: it.costo, tipo: 'Compra', doc, ts: ctx.ts, us: ctx.u });
+      // El inventario entra sin IVA: ese IVA es crédito, no costo. El pequeño contribuyente no lo desglosa.
+      const neto = prov.regimen === 'Pequeño contribuyente' ? it.costo : it.costo / (1 + db.cfg.ivaPct / 100);
+      const l = lote(db, { prod: p.id, num: it.lote, vence: it.vence, costo: r2(neto * 10000) / 10000, fondo: oc ? oc.fondo : (d.fondo || 'Propio'), registro: p.registro, ts: ctx.ts, prov: prov.id });
+      entrar(db, { prod: p.id, lote: l.id, bod: 'BC', cant: it.cant, costo: neto, tipo: 'Compra', doc, ts: ctx.ts, us: ctx.u });
       if (p.controlado) db.controlados.push({ id: ++db.seq.ctrl, f: ctx.ts, prod: p.id, lote: l.id, sale: 0, entra: it.cant, saldo: p.qty, receta: '', medico: '', colegiado: '', pac: null, doc, us: ctx.u });
       total += it.cant * it.costo; lineas.push({ prod: p.id, cant: it.cant, costo: it.costo, lote: l.id });
       if (oc) { const li = oc.items.find(x => x.prod === p.id); if (li) li.recibido = (li.recibido || 0) + it.cant; }
@@ -201,7 +205,7 @@
     const pequeño = prov.regimen === 'Pequeño contribuyente';
     const iva = pequeño ? 0 : r2(total - total / 1.12), base = r2(total - iva);
     const ret = retenciones(db, base, iva, prov);
-    const rec = { id: 'r' + n, num: doc, f: ctx.ts, oc: oc ? oc.id : null, prov: prov.id, serie: d.factura.serie, factura: d.factura.num, fFactura: d.factura.fecha || ctx.ts, total, base, iva, tipoDoc: pequeño ? 'FPEQ' : 'FACT', ret, lineas, us: ctx.u, fondo: oc ? oc.fondo : 'Propio' };
+    const rec = { id: 'r' + n, num: doc, f: ctx.ts, oc: oc ? oc.id : null, prov: prov.id, serie: d.factura.serie, factura: d.factura.num, fFactura: d.factura.fecha || ctx.ts, total, base, iva, tipoDoc: pequeño ? 'FPEQ' : 'FACT', ret, lineas, us: ctx.u, fondo: oc ? oc.fondo : (d.fondo || 'Propio'), uuid: d.factura.uuid || null, origen: d.origen || 'orden' };
     db.recepciones.push(rec); db.ix.rec.set(rec.id, rec);
     const x = { id: 'x' + (++db.seq.cxp), rec: rec.id, prov: prov.id, f: ctx.ts, vence: ctx.ts + prov.dias * DIA, total, ret, aPagar: r2(total - ret.isr - ret.iva), estado: 'pendiente', pago: null };
     db.cxp.push(x); db.ix.cxp.set(x.id, x);
@@ -252,7 +256,7 @@
     'descuento.pedir'(db, d, ctx) {
       const c = db.ix.cuenta.get(d.cuenta) || no('Cuenta no encontrada.');
       if (c.dte) no('La cuenta ya está facturada.');
-      c.desc = { pct: d.pct, motivo: d.motivo, estado: 'pendiente', pide: ctx.u, f: ctx.ts };
+      c.desc = { pct: d.pct, motivo: d.motivo, estado: db.cfg.descuentoAut ? 'pendiente' : 'aprobado', pide: ctx.u, f: ctx.ts };
       return { txt: `Pidió descuento social en ${c.num}` };
     },
     'descuento.resolver'(db, d, ctx) {
@@ -403,12 +407,13 @@
       if (!d.motivo) no('Indique el motivo.');
       const a = { id: 'j' + (++db.seq.ajuste), num: 'AJ-' + pad(db.seq.ajuste, 6), lote: l.id, prod: l.prod, bod: d.bod, cant: d.cant, motivo: d.motivo, f: ctx.ts, us: ctx.u, estado: 'pendiente', origen: d.origen || null };
       db.ajustes.push(a); db.ix.aj.set(a.id, a);
+      if (!db.cfg.ajusteAprueba) { ops['ajuste.resolver'](db, { id: a.id, aprobar: true, auto: true }, ctx); return { id: a.id, txt: `Aplicó ajuste ${a.num}` }; }
       return { id: a.id, txt: `Pidió ajuste ${a.num}` };
     },
     'ajuste.resolver'(db, d, ctx) {
       const a = db.ix.aj.get(d.id) || no('Ajuste no encontrado.');
       if (a.estado !== 'pendiente') no('Otro usuario ya lo resolvió.');
-      if (a.us === ctx.u) no('Quien pide un ajuste no puede aprobarlo.');
+      if (!d.auto && db.cfg.separarFunciones && a.us === ctx.u) no('Quien pide un ajuste no puede aprobarlo.');
       if (d.aprobar) {
         const l = db.ix.lote.get(a.lote);
         if (a.cant < 0) { if ((l.ex[a.bod] || 0) < -a.cant) no('El lote ya no tiene esa existencia.'); salirLote(db, { prod: a.prod, lote: a.lote, bod: a.bod, cant: -a.cant, tipo: 'Ajuste', doc: a.num, ts: ctx.ts, us: ctx.u }); }
@@ -464,7 +469,7 @@
       if (!db.ix.prov.get(d.prov)) no('Elija un proveedor.');
       if (!d.items.length) no('Agregue al menos un producto.');
       const total = r2(d.items.reduce((a, i) => a + i.cant * i.costo, 0));
-      const o = { id: 'o' + (++db.seq.oc), num: 'OC-' + pad(db.seq.oc, 6), prov: d.prov, fondo: d.fondo || 'Propio', items: d.items.map(i => ({ ...i, recibido: 0 })), total, f: ctx.ts, us: ctx.u, sol: d.sol || null, nog: d.nog || '', estado: total >= db.cfg.limiteAprobacion ? 'por aprobar' : 'aprobada', aprueba: null };
+      const o = { id: 'o' + (++db.seq.oc), num: 'OC-' + pad(db.seq.oc, 6), prov: d.prov, fondo: d.fondo || 'Propio', items: d.items.map(i => ({ ...i, recibido: 0 })), total, f: ctx.ts, us: ctx.u, sol: d.sol || null, nog: d.nog || '', estado: db.cfg.aprobarOC && total >= db.cfg.limiteAprobacion ? 'por aprobar' : 'aprobada', aprueba: null };
       db.ocs.push(o); db.ix.oc.set(o.id, o);
       if (d.sol) { const s = db.ix.sol.get(d.sol); if (s) { s.estado = 'atendida'; s.oc = o.id; } }
       return { id: o.id, txt: `Creó ${o.num} por ${fQ(total)}`, estado: o.estado };
@@ -472,7 +477,7 @@
     'oc.resolver'(db, d, ctx) {
       const o = db.ix.oc.get(d.id) || no('Orden no encontrada.');
       if (o.estado !== 'por aprobar') no('Otro usuario ya la resolvió.');
-      if (o.us === ctx.u) no('Quien crea la orden no puede aprobarla.');
+      if (db.cfg.separarFunciones && o.us === ctx.u) no('Quien crea la orden no puede aprobarla.');
       o.estado = d.aprobar ? 'aprobada' : 'rechazada'; o.aprueba = ctx.u; o.fa = ctx.ts;
       return { txt: `${d.aprobar ? 'Aprobó' : 'Rechazó'} ${o.num}` };
     },
@@ -497,6 +502,47 @@
       if (!d.ref) no('Escriba el número de cheque o transferencia.');
       x.estado = 'pagado'; x.pago = { f: ctx.ts, forma: d.forma, ref: d.ref, us: ctx.u };
       return { txt: `Pagó ${fQ(x.aPagar)} (${d.forma} ${d.ref})` };
+    },
+    /* Un solo camino para ingresar mercadería: factura, XML, Excel o saldo inicial. Siempre entra a Bodega central. */
+    'ingreso.registrar'(db, d, ctx) {
+      const items = (d.items || []).filter(i => i.cant > 0);
+      if (!items.length) no('Agregue al menos un producto con cantidad.');
+      const hoy = M.finDia(ctx.ts);
+      for (const i of items) {
+        if (!db.ix.prod.get(i.prod)) no('Hay una línea sin relacionar con un producto.');
+        if (!i.lote) no('Cada línea necesita número de lote.');
+        if (!i.vence) no('Cada línea necesita fecha de vencimiento.');
+        if (i.vence < hoy) no(`El lote ${i.lote} ya viene vencido: no entra al inventario.`);
+        if (!(i.costo >= 0)) no('Revise el costo de cada línea.');
+      }
+      if (d.origen === 'saldo') {
+        const n = ++db.seq.rec, doc = 'SAL-' + pad(n, 6);
+        for (const i of items) {
+          const p = db.ix.prod.get(i.prod), l = lote(db, { prod: p.id, num: i.lote, vence: i.vence, costo: i.costo, fondo: d.fondo || 'Propio', registro: p.registro, ts: ctx.ts });
+          entrar(db, { prod: p.id, lote: l.id, bod: 'BC', cant: i.cant, costo: i.costo, tipo: 'Saldo inicial', doc, ts: ctx.ts, us: ctx.u });
+        }
+        return { doc, txt: `Registró saldos iniciales ${doc}: ${items.length} ${items.length === 1 ? 'línea' : 'líneas'}` };
+      }
+      if (!db.ix.prov.get(d.prov)) no('Elija el proveedor.');
+      if (!d.factura || !d.factura.num) no('Escriba serie y número de factura.');
+      if (db.recepciones.some(r => r.prov === d.prov && r.factura === d.factura.num && r.serie === d.factura.serie)) no('Esa factura de ese proveedor ya fue ingresada.');
+      const r = recibir(db, { prov: d.prov, factura: d.factura, items, fondo: d.fondo, origen: d.origen }, ctx);
+      return { id: r.id, doc: r.num, txt: `Ingresó ${r.num}: ${items.length} ${items.length === 1 ? 'línea' : 'líneas'} por ${fQ(r.total)}` };
+    },
+    'rol.permisos'(db, d) { C.ROLES[d.rol].acciones = d.acciones; return { txt: `Cambió permisos de ${C.ROLES[d.rol].nombre}` }; },
+    'usuario.crear'(db, d) {
+      if (!d.nombre || d.nombre.trim().length < 3) no('Falta el nombre.');
+      if (!/^\d{4}$/.test(d.pin || '')) no('El PIN lleva 4 números.');
+      const u = { id: 'n' + (db.usuarios.length + 1), nombre: d.nombre.trim(), rol: d.rol, pin: d.pin, disp: d.disp || 'Computadora · ' + C.ROLES[d.rol].nombre, activo: true };
+      db.usuarios.push(u); db.ix.usr.set(u.id, u);
+      return { id: u.id, txt: `Creó al usuario ${u.nombre}` };
+    },
+    'servicio.guardar'(db, d) {
+      if (!d.nombre) no('Falta el nombre.');
+      if (d.id) { const s = db.ix.serv.get(d.id); Object.assign(s, d); return { txt: `Editó el servicio ${s.cod}` }; }
+      const n = db.servicios.length + 1, s = { id: 'sv' + n, cod: 'S' + pad(n + 100, 3), nombre: d.nombre, area: d.area, precio: +d.precio || 0 };
+      db.servicios.push(s); db.ix.serv.set(s.id, s);
+      return { id: s.id, txt: `Creó el servicio ${s.cod}` };
     },
     'donacion.entrada'(db, d, ctx) {
       if (!d.donante) no('Indique el donante.');
@@ -703,8 +749,20 @@
     return db;
   };
 
+  /* Sistema en blanco: sin datos de ejemplo, para cargar lo propio */
+  M.vacia = function (ancla) {
+    const db = baseVacia(ancla);
+    db.productos = []; db.ix.prod.clear(); db.proveedores = []; db.ix.prov.clear();
+    db.seq.pac = 1; const p = { id: 'a1', exp: 'HG-000001', nombre: 'Cliente de mostrador', dpi: '', nit: 'CF', nac: null, sexo: '', tel: '', muni: '', alta: ancla };
+    db.pacientes.push(p); db.ix.pac.set(p.id, p);
+    return db;
+  };
+
   /* ---------- registro compartido entre dispositivos ---------- */
-  const DBN = 'hhg-demo-v1';
+  const VERSION = 5; // subir cuando cambie la semilla: un registro viejo no se aplica sobre datos nuevos
+  const leerModo = () => { try { return localStorage.getItem('hhg.modo') || 'demo'; } catch (e) { return 'demo'; } };
+  M.modo = leerModo();
+  const DBN = M.modo === 'real' ? 'hhg-real-v1' : 'hhg-demo-v' + VERSION, ANCLA = (M.modo === 'real' ? 'hhg.ancla.real' : 'hhg.ancla.v' + VERSION);
   let idb = null, canal = null, ultimo = 0, jalando = false, otraVez = false;
   const pendientes = new Map(); const oyentes = new Set(); let memoria = [];
   function abrirIDB() {
@@ -744,15 +802,15 @@
   }
   M.iniciar = async function () {
     let ancla = null;
-    try { ancla = +localStorage.getItem('hhg.ancla') || null; } catch (e) { }
-    if (!ancla || M.finDia(ancla) !== M.finDia(Date.now())) {
-      /* cada día arranca limpio para que la hora y los datos sigan vigentes */
+    try { ancla = +localStorage.getItem(ANCLA) || null; } catch (e) { }
+    if (!ancla || (M.modo === 'demo' && M.finDia(ancla) !== M.finDia(Date.now()))) {
+      /* el demo arranca limpio cada día para que fechas y vencimientos sigan vigentes; el modo real nunca */
       ancla = Date.now();
-      try { localStorage.setItem('hhg.ancla', String(ancla)); } catch (e) { }
+      try { localStorage.setItem(ANCLA, String(ancla)); } catch (e) { }
       await M.borrarRegistro();
     }
     idb = idb || await abrirIDB();
-    M.db = M.sembrar(ancla);
+    M.db = M.modo === 'real' ? M.vacia(ancla) : M.sembrar(ancla);
     if (typeof BroadcastChannel !== 'undefined') {
       canal = new BroadcastChannel('hhg-demo');
       canal.onmessage = e => { if (e.data === 'nuevo') jalar(); if (e.data === 'reinicio') location.reload(); };
@@ -775,8 +833,17 @@
     return espera;
   };
   M.alCambiar = fn => { oyentes.add(fn); return () => oyentes.delete(fn); };
+  M.cambiarModo = function (m) { try { localStorage.setItem('hhg.modo', m); } catch (e) { } if (canal) canal.postMessage('reinicio'); location.reload(); };
+  M.exportar = async () => ({ sistema: 'hhg', modo: M.modo, ancla: M.db.ancla, fecha: Date.now(), ops: await leer(0) });
+  M.importar = async function (o) {
+    if (!o || o.sistema !== 'hhg' || !Array.isArray(o.ops)) throw new Error('Ese archivo no es un respaldo del sistema.');
+    await M.borrarRegistro(); idb = await abrirIDB();
+    for (const op of o.ops) { const { n, ...x } = op; await escribir(x); }
+    try { localStorage.setItem(ANCLA, String(o.ancla)); } catch (e) { }
+    if (canal) canal.postMessage('reinicio'); location.reload();
+  };
   M.reiniciar = async function () {
-    try { localStorage.removeItem('hhg.ancla'); } catch (e) { }
+    try { localStorage.removeItem(ANCLA); } catch (e) { }
     if (canal) canal.postMessage('reinicio');
     await M.borrarRegistro();
     location.reload();

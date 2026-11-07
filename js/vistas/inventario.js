@@ -19,7 +19,7 @@
 
   /* ---------- inventario ---------- */
   A.vistas.inventario = {
-    ruta: p => ({ existencias: 'Existencias', vencimientos: 'Vencimientos', kardex: 'Kárdex', traslados: 'Traslados', ajustes: 'Ajustes y bajas', conteo: 'Conteo físico', rastreo: 'Rastreo de lote' }[(p[1] || 'existencias').split('?')[0]]),
+    ruta: p => ({ existencias: 'Existencias', vencimientos: 'Vencimientos', kardex: 'Kárdex', traslados: 'Traslados', ajustes: 'Ajustes y bajas', conteo: 'Conteo físico', rastreo: 'Rastreo de lote', ingreso: 'Ingresar mercadería' }[(p[1] || 'existencias').split('?')[0]]),
     html(st, p) {
       const tab = (p[1] || 'existencias').split('?')[0]; const d = db();
       if ((p[1] || '').includes('?bajo')) st.fb = 'bajo';
@@ -27,8 +27,8 @@
       const nVenc = d.lotes.filter(l => l.vence < hoy + 30 * M.DIA && Object.values(l.ex).some(n => n > 0)).length;
       const nTr = d.traslados.filter(t => t.estado === 'solicitado' || t.estado === 'en camino').length;
       const nAj = d.ajustes.filter(a => a.estado === 'pendiente').length;
-      const tabs = U.tabs([{ id: 'existencias', t: 'Existencias' }, { id: 'vencimientos', t: 'Vencimientos', n: nVenc }, { id: 'kardex', t: 'Kárdex' }, { id: 'rastreo', t: 'Rastreo de lote' }, { id: 'traslados', t: 'Traslados', n: nTr }, { id: 'ajustes', t: 'Ajustes y bajas', n: nAj }, { id: 'conteo', t: 'Conteo físico' }], tab, 'inventario');
-      return ({ existencias, vencimientos, kardex, traslados, ajustes, conteo, rastreo: A.rastreo }[tab])(st, tabs);
+      const tabs = U.tabs([...(A.puede('inv.ingreso') ? [{ id: 'ingreso', t: 'Ingresar mercadería' }] : []), { id: 'existencias', t: 'Existencias' }, { id: 'vencimientos', t: 'Vencimientos', n: nVenc }, { id: 'kardex', t: 'Kárdex' }, { id: 'rastreo', t: 'Rastreo de lote' }, { id: 'traslados', t: 'Traslados', n: nTr }, { id: 'ajustes', t: 'Ajustes y bajas', n: nAj }, { id: 'conteo', t: 'Conteo físico' }], tab, 'inventario');
+      return ({ existencias, vencimientos, kardex, traslados, ajustes, conteo, rastreo: A.rastreo, ingreso: A.ingreso }[tab])(st, tabs);
     },
     acc: {
       fb(id) { A.st.inventario.fb = id; A.st.inventario.pag_t = 0; A.repintar(); },
@@ -48,7 +48,7 @@
       kexp() { const id = A.st.inventario.kp; const p = db().ix.prod.get(id); U.csv('kardex-' + p.cod, [['Fecha', 'Movimiento', 'Documento', 'Bodega', 'Cantidad', 'Saldo', 'Costo', 'Valor'], ...(db().ix.movsDe.get(id) || []).map(m => [U.fh(m.f), m.t, m.d, m.b, m.c, m.s, m.u, m.v])]); },
     },
     despues(el, st) {
-      A.rastreoListo(el, st);
+      A.rastreoListo(el, st); A.ingresoListo(el, st);
       const s = el.querySelector('#kselect'); if (!s) return;
       U.selector(s, { ph: 'Buscar producto', valor: st.kp ? db().ix.prod.get(st.kp).nombre : '', limpiar: false, buscar: q => db().productos.filter(p => (p._n || (p._n = U.norm(p.nombre + ' ' + p.cod))).includes(q)).map(p => ({ txt: p.nombre, sub: p.cod, id: p.id })), alElegir(x) { st.kp = x.id; st.pag_k = 0; A.repintar(); } });
     },
@@ -98,7 +98,7 @@
     const puedeE = t.estado === 'solicitado' && A.puede('inv.enviar'), puedeR = t.estado === 'en camino' && A.puede('inv.recibir');
     const h = U.hoja({
       titulo: t.num, sub: `${M.nomBod(db(), t.de)} → ${M.nomBod(db(), t.a)}`, ancho: 600,
-      cuerpo: `<p>${A.etEstado(t.estado)}</p>${U.tabla({ contar: false, por: 100, filas: t.items, cols: [{ t: 'Producto', h: i => e(db().ix.prod.get(i.prod).nombre) }, { t: 'Disponible en origen', der: 1, h: i => U.n(M.disponible(db(), i.prod, t.de, Date.now())) }, { t: 'Cantidad', der: 1, h: i => U.n(i.cant) }] })}`,
+      cuerpo: `${U.flujo(['Solicitado', 'En camino', 'Recibido'], t.estado === 'recibido' ? 3 : t.estado === 'en camino' ? 1 : 0)}${U.tabla({ contar: false, por: 100, filas: t.items, cols: [{ t: 'Producto', h: i => e(db().ix.prod.get(i.prod).nombre) }, { t: 'Disponible en origen', der: 1, h: i => U.n(M.disponible(db(), i.prod, t.de, Date.now())) }, { t: 'Cantidad', der: 1, h: i => U.n(i.cant) }] })}`,
       pie: puedeE ? `<button class="btn pri" data-a="enviar">Enviar</button>` : puedeR ? `<button class="btn pri" data-a="recibir">Confirmar recepción</button>` : '',
       acciones: { async enviar() { const r = await U.hacer('traslado.enviar', { id }, true); if (r.ok) h.cerrar(); }, async recibir() { const r = await U.hacer('traslado.recibir', { id }, true); if (r.ok) h.cerrar(); } },
     });
@@ -183,7 +183,7 @@
     },
     acc: {
       oc: id => verOC(id), rec: id => Docs.rec(id), nuevaOC: () => formOC(), sol: id => verSol(id), nuevaSol: () => formSol(), cxp: id => verCxp(id),
-      recibir: id => formRecibir(id), prov: id => formProv(db().ix.prov.get(id)), nuevoProv: () => formProv(), fx(id) { A.st.compras.fx = id; A.st.compras.pag_t = 0; A.repintar(); },
+      recibir: id => { A.ingresoDesdeOC(id); }, prov: id => formProv(db().ix.prov.get(id)), nuevoProv: () => formProv(), fx(id) { A.st.compras.fx = id; A.st.compras.pag_t = 0; A.repintar(); },
     },
   };
   function solicitudes(st, tabs) {
@@ -275,13 +275,14 @@
       <div class="filtros">${U.busca('bp', st.bp, 'Nombre o NIT')}</div>
       ${U.tabla({ filas, pag: st.pag_t, vacioT: 'Sin proveedores', cols: [{ t: 'Proveedor', h: p => `${e(p.nombre)}<span class="t-sub">${e(p.cod)} · NIT ${e(p.nit)}</span>` }, { t: 'Rubro', h: p => e(p.rubro) }, { t: 'Régimen', h: p => e(p.regimen) }, { t: 'Crédito', der: 1, h: p => p.dias ? p.dias + ' días' : 'Contado' }, { t: '', der: 1, h: p => A.puede('proveedor') ? U.lapiz('prov', p.id) : '' }] })}`;
   }
-  function formProv(p) {
-    const v = p || { regimen: 'Sujeto a pagos trimestrales', dias: 30 };
+  A.formProv = (p, listo, pre) => formProv(p, listo, pre);
+  function formProv(p, listo, pre) {
+    const v = p || { regimen: 'Sujeto a pagos trimestrales', dias: 30, ...pre };
     const h = U.hoja({
       titulo: p ? 'Editar proveedor' : 'Nuevo proveedor', ancho: 500,
       cuerpo: `<div class="rejilla"><div class="campo ancho"><label for="n">Nombre</label><input id="n" type="text" value="${e(v.nombre || '')}"></div><div class="campo"><label for="ni">NIT</label><input id="ni" type="text" value="${e(v.nit || '')}"></div><div class="campo"><label for="te">Teléfono</label><input id="te" type="tel" value="${e(v.tel || '')}"></div><div class="campo"><label for="ru">Rubro</label><input id="ru" type="text" value="${e(v.rubro || '')}"></div><div class="campo"><label for="di">Días de crédito</label><input id="di" type="number" value="${v.dias}"></div><div class="campo ancho"><label for="re">Régimen</label><select id="re">${['Sujeto a pagos trimestrales', 'Opcional simplificado', 'Pequeño contribuyente'].map(x => `<option ${x === v.regimen ? 'selected' : ''}>${x}</option>`).join('')}</select></div></div>`,
       pie: `<button class="btn" data-cerrar>Cancelar</button><button class="btn pri" data-a="ok">Guardar</button>`,
-      acciones: { async ok() { const q = s => h.cuerpo.querySelector(s).value.trim(); const d = { nombre: q('#n'), nit: q('#ni'), tel: q('#te'), rubro: q('#ru'), dias: +q('#di'), regimen: q('#re') }; if (p) d.id = p.id; const r = await U.hacer('proveedor.guardar', d, 'Proveedor guardado.'); if (r.ok) h.cerrar(); } },
+      acciones: { async ok() { const q = s => h.cuerpo.querySelector(s).value.trim(); const d = { nombre: q('#n'), nit: q('#ni'), tel: q('#te'), rubro: q('#ru'), dias: +q('#di'), regimen: q('#re') }; if (p) d.id = p.id; const r = await U.hacer('proveedor.guardar', d, 'Proveedor guardado.'); if (r.ok) { h.cerrar(); if (listo) listo(r.id); } } },
     });
   }
 })(window);

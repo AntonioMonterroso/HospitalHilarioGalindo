@@ -35,6 +35,8 @@
     const nav = total > por ? `<div class="pagina"><span class="num">${U.n(pag * por + 1)}–${U.n(Math.min(total, pag * por + por))} de ${U.n(total)}</span><span class="acciones"><button class="btn chico" data-a="pag" data-id="${o.nombre || 't'}|${pag - 1}" ${pag ? '' : 'disabled'}>Anterior</button><button class="btn chico" data-a="pag" data-id="${o.nombre || 't'}|${pag + 1}" ${(pag + 1) * por < total ? '' : 'disabled'}>Siguiente</button></span></div>` : (o.contar === false ? '' : `<div class="pagina"><span class="num">${U.n(total)} ${total === 1 ? 'registro' : 'registros'}</span></div>`);
     return `<div class="tabla-marco"><table class="t"><thead><tr>${cab}</tr></thead><tbody>${cuerpo}</tbody>${pie}</table>${nav}</div>`;
   };
+  /* Dónde va un proceso: pasos hechos, el actual y lo que falta */
+  U.flujo = (pasos, n) => `<ol class="flujo" aria-label="Avance">${pasos.map((t, i) => `<li class="${i < n ? 'hecho' : i === n ? 'ahora' : ''}"><i>${i < n ? U.ic('check') : i + 1}</i><span>${e(t)}</span></li>`).join('')}</ol>`;
   U.tabs = (items, activo, ruta) => `<div class="tabs" role="tablist">${items.map(t => `<a role="tab" href="#/${ruta}/${t.id}" aria-selected="${t.id === activo}">${e(t.t)}${t.n ? `<span class="cuenta">${U.n(t.n)}</span>` : ''}</a>`).join('')}</div>`;
   U.chips = (items, activo, a) => `<div class="chips">${items.map(([id, t]) => `<button class="chip" data-a="${a}" data-id="${e(id)}" aria-pressed="${id === activo}">${e(t)}</button>`).join('')}</div>`;
   U.busca = (id, val, ph) => `<div class="campo-b">${U.ic('search')}<input type="search" id="${id}" value="${e(val || '')}" placeholder="${e(ph)}" aria-label="${e(ph)}" data-filtro="${id}"></div>`;
@@ -46,7 +48,7 @@
   let zi = 1000;
   U.hoja = function (o) {
     const capa = document.createElement('div');
-    capa.className = 'capa' + (o.dialogo ? ' dialogo' : ''); capa.style.zIndex = ++zi;
+    capa.className = 'capa' + (o.dialogo ? ' dialogo' : ''); capa.style.zIndex = ++zi; if (o.area != null) capa.style.setProperty('--a', o.area);
     capa.innerHTML = `<section class="hoja" role="dialog" aria-modal="true" aria-label="${e(o.titulo)}" style="--ancho:${o.ancho || 560}px">
       <header class="hoja-cab"><div><h2>${e(o.titulo)}</h2>${o.sub ? `<p>${e(o.sub)}</p>` : ''}</div><button class="ojo" data-cerrar aria-label="Cerrar">${U.ic('x')}</button></header>
       <div class="hoja-cuerpo">${o.cuerpo || ''}</div>${o.pie ? `<footer class="hoja-pie">${o.pie}</footer>` : ''}</section>`;

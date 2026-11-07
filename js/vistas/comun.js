@@ -64,6 +64,7 @@
     const o = db().ix.oc.get(id), p = db().ix.prov.get(o.prov);
     U.hoja({
       titulo: 'Orden de compra', sub: `${o.num} · ${U.fecha(o.f)}`, ancho: 680, pie: imprimir, acciones: accImp, cuerpo: `<div class="doc">${cabDoc('Orden de compra', o.num)}
+      ${U.flujo(['Orden', 'Aprobada', 'Recibida', 'Pagada'], (() => { const rec = db().recepciones.filter(r => r.oc === o.id); const pag = rec.length && rec.every(r => db().cxp.find(x => x.rec === r.id && x.estado === 'pagado')); return pag ? 4 : o.estado === 'recibida' ? 3 : o.estado === 'aprobada' || o.estado === 'parcial' ? 2 : 1; })())}
       <dl><dt>Proveedor</dt><dd>${e(p.nombre)} · NIT ${e(p.nit)}</dd><dt>Fuente de fondos</dt><dd>${e(o.fondo)}${o.nog ? ` · NOG ${e(o.nog)}` : ''}</dd><dt>Elaboró</dt><dd>${e(A.nomU(o.us))}</dd><dt>Aprobó</dt><dd>${o.aprueba ? `${e(A.nomU(o.aprueba))}, ${U.fh(o.fa)}` : (o.estado === 'por aprobar' ? 'Pendiente' : 'Bajo el límite de aprobación')}</dd><dt>Estado</dt><dd>${A.etEstado(o.estado)}</dd></dl>
       ${U.tabla({ contar: false, por: 500, filas: o.items, cols: [{ t: 'Producto', h: i => e(db().ix.prod.get(i.prod).nombre) }, { t: 'Pedido', der: 1, h: i => U.n(i.cant) }, { t: 'Recibido', der: 1, h: i => U.n(i.recibido || 0) }, { t: 'Costo', der: 1, h: i => Q(i.costo) }, { t: 'Total', der: 1, h: i => Q(i.cant * i.costo) }] })}
       <div class="totales"><div class="gran"><span>Total</span><span>${Q(o.total)}</span></div></div></div>`,
@@ -175,8 +176,8 @@
       { t: 'Fecha', h: m => U.fh(m.f) }, { t: 'Movimiento', h: m => e(m.t) }, { t: 'Documento', h: m => e(m.d) }, { t: 'Bodega', h: m => m.b === 'TR' ? 'En tránsito' : e(M.nomBod(db(), m.b)) },
       { t: 'Entra', der: 1, h: m => m.c > 0 ? U.n(m.c) : '' }, { t: 'Sale', der: 1, h: m => m.c < 0 ? U.n(-m.c) : '' }, { t: 'Saldo', der: 1, h: m => U.n(m.s) }, { t: 'Costo', der: 1, h: m => Q(m.u) }, { t: 'Valor', der: 1, h: m => Q(m.v) }],
   });
-  A.formProducto = function (p, listo) {
-    const v = p || { cat: 'Medicamento', pres: 'Unidad' };
+  A.formProducto = function (p, listo, pre) {
+    const v = p || { cat: 'Medicamento', pres: 'Unidad', ...pre };
     const cats = ['Medicamento', 'Insumo médico', 'Laboratorio e imagen', 'Uso interno'];
     const h = U.hoja({
       titulo: p ? 'Editar producto' : 'Nuevo producto', sub: p ? p.cod : '', ancho: 520,
@@ -192,7 +193,7 @@
           const q = s => h.cuerpo.querySelector(s);
           const d = { nombre: q('#n').value.trim(), pres: q('#pr').value, cat: q('#ca').value, venta: +q('#ve').value, registro: q('#rs').value || null, min: +q('#mi').value, max: +q('#ma').value, controlado: q('#ct').value || null, generico: q('#ge').checked };
           const r = await U.hacer('producto.guardar', p ? { id: p.id, nombre: d.nombre, datos: d } : d, p ? 'Producto actualizado.' : true);
-          if (r.ok) { h.cerrar(); if (listo) listo(); }
+          if (r.ok) { h.cerrar(); if (listo) listo(r.id); }
         },
       },
     });
